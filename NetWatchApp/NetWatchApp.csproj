@@ -17,13 +17,4 @@
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Classes\Servicies\" />
-    <Folder Include="Classes\Repositories\" />
-    <Folder Include="Data\EntityFramework\" />
-    <Folder Include="Data\SeedData\" />
-    <Folder Include="Forms\" />
-    <Folder Include="Interfaces\" />
-  </ItemGroup>
-
 </Project>
