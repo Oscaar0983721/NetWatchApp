@@ -1,3 +1,9 @@
+using NetWatchApp.Data.EntityFramework;
+using NetWatchApp.Data.SeedData;
+using NetWatchApp.Forms;
+using System;
+using System.Windows.Forms;
+
 namespace NetWatchApp
 {
     internal static class Program
@@ -8,10 +14,18 @@ namespace NetWatchApp
         [STAThread]
         static void Main()
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
-            ApplicationConfiguration.Initialize();
-            Application.Run(new Form1());
+            Application.SetHighDpiMode(HighDpiMode.SystemAware);
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+
+            // Initialize database and seed data
+            using (var context = new NetWatchDbContext())
+            {
+                context.Database.EnsureCreated();
+                DataSeeder.SeedData(context);
+            }
+
+            Application.Run(new LoginForm());
         }
     }
 }
