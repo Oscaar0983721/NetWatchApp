@@ -50,8 +50,6 @@ namespace NetWatchApp.Forms
             // pnlHeader
             this.pnlHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
             this.pnlHeader.Controls.Add(this.lblTitle);
-            this.  ((int)(((byte)(45)))));
-            this.pnlHeader.Controls.Add(this.lblTitle);
             this.pnlHeader.Controls.Add(this.lblReleaseYear);
             this.pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlHeader.Location = new System.Drawing.Point(0, 0);
