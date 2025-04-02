@@ -27,9 +27,11 @@ namespace NetWatchApp.Data.SeedData
 
             // Seed users
             SeedUsers();
+            _context.SaveChanges(); // Guardar usuarios primero
 
             // Seed content
             SeedContent();
+            _context.SaveChanges(); // Guardar contenido después
 
             // Seed ratings
             SeedRatings();
@@ -50,7 +52,7 @@ namespace NetWatchApp.Data.SeedData
                 FirstName = "Admin",
                 LastName = "User",
                 Email = "admin@netwatch.com",
-                Password = "admin123", 
+                Password = "admin123", // In a real app, this would be hashed
                 IsAdmin = true,
                 RegistrationDate = DateTime.Now.AddMonths(-6)
             };
@@ -62,7 +64,7 @@ namespace NetWatchApp.Data.SeedData
                 FirstName = "John",
                 LastName = "Doe",
                 Email = "john.doe@example.com",
-                Password = "password123", 
+                Password = "password123", // In a real app, this would be hashed
                 IsAdmin = false,
                 RegistrationDate = DateTime.Now.AddMonths(-3)
             };
@@ -73,7 +75,7 @@ namespace NetWatchApp.Data.SeedData
                 FirstName = "Jane",
                 LastName = "Smith",
                 Email = "jane.smith@example.com",
-                Password = "password123", 
+                Password = "password123", // In a real app, this would be hashed
                 IsAdmin = false,
                 RegistrationDate = DateTime.Now.AddMonths(-2)
             };
@@ -193,10 +195,18 @@ namespace NetWatchApp.Data.SeedData
 
         private void SeedRatings()
         {
+            // Obtener usuarios y contenidos ya guardados en la base de datos
             var users = _context.Users.ToList();
             var contents = _context.Contents.ToList();
 
-            // Add some ratings
+            // Verificar que haya suficientes usuarios y contenidos antes de agregar ratings
+            if (users.Count < 3 || contents.Count < 5)
+            {
+                // Si no hay suficientes datos, salir del método
+                return;
+            }
+
+            // Ahora es seguro agregar los ratings
             _context.Ratings.Add(new Rating
             {
                 UserId = users[1].Id, // John Doe
@@ -236,10 +246,18 @@ namespace NetWatchApp.Data.SeedData
 
         private void SeedViewingHistory()
         {
+            // Obtener usuarios y contenidos ya guardados en la base de datos
             var users = _context.Users.ToList();
             var contents = _context.Contents.ToList();
 
-            // Add viewing history for movies
+            // Verificar que haya suficientes usuarios y contenidos antes de agregar el historial
+            if (users.Count < 3 || contents.Count < 5)
+            {
+                // Si no hay suficientes datos, salir del método
+                return;
+            }
+
+            // Ahora es seguro agregar el historial de visualización
             _context.ViewingHistories.Add(new ViewingHistory
             {
                 UserId = users[1].Id, // John Doe
