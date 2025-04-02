@@ -1,45 +1,72 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace NetWatchApp.Classes.Models
 {
-    public enum ContentType
-    {
-        Movie,
-        Series
-    }
-
     public class Content
     {
+        public Content()
+        {
+            Episodes = new List<Episode>();
+            Ratings = new List<Rating>();
+            ViewingHistories = new List<ViewingHistory>();
+        }
+
         [Key]
         public int Id { get; set; }
 
         [Required]
-        [StringLength(100)]
+        [MaxLength(100)]
         public string Title { get; set; }
 
-        public ContentType Type { get; set; }
-
-        [StringLength(500)]
+        [Required]
+        [MaxLength(1000)]
         public string Description { get; set; }
 
-        [StringLength(50)]
-        public string Genre { get; set; }
-
+        [Required]
         public int ReleaseYear { get; set; }
 
-        public int DurationMinutes { get; set; }
+        [Required]
+        [MaxLength(50)]
+        public string Genre { get; set; }
 
-        [StringLength(50)]
+        [Required]
+        [MaxLength(20)]
+        public string Type { get; set; } // Movie or Series
+
+        [Required]
+        [MaxLength(50)]
         public string Platform { get; set; }
 
-        [StringLength(200)]
+        public int Duration { get; set; } // In minutes (for movies)
+
+        // New property for image
+        [MaxLength(255)]
         public string ImagePath { get; set; }
 
         // Navigation properties
         public virtual ICollection<Episode> Episodes { get; set; }
-        public virtual ICollection<ViewingHistory> ViewingHistories { get; set; }
         public virtual ICollection<Rating> Ratings { get; set; }
+        public virtual ICollection<ViewingHistory> ViewingHistories { get; set; }
+
+        [NotMapped]
+        public double AverageRating
+        {
+            get
+            {
+                if (Ratings == null || Ratings.Count == 0)
+                    return 0;
+
+                double sum = 0;
+                foreach (var rating in Ratings)
+                {
+                    sum += rating.Score;
+                }
+                return Math.Round(sum / Ratings.Count, 1);
+            }
+        }
     }
 }
+
