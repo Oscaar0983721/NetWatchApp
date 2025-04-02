@@ -5,7 +5,6 @@ using NetWatchApp.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace NetWatchApp.Classes.Repositories
 {
@@ -18,93 +17,155 @@ namespace NetWatchApp.Classes.Repositories
             _context = context;
         }
 
-        public async Task<Content> GetByIdAsync(int id)
+        public List<Content> GetAll()
         {
-            return await _context.Contents
+            return _context.Contents
                 .Include(c => c.Episodes)
-                .FirstOrDefaultAsync(c => c.Id == id);
+                .ToList();
         }
 
-        public async Task<IEnumerable<Content>> GetAllAsync()
+        public Content GetById(int id)
         {
-            return await _context.Contents
+            return _context.Contents
                 .Include(c => c.Episodes)
-                .ToListAsync();
+                .FirstOrDefault(c => c.Id == id);
         }
 
-        public async Task<IEnumerable<Content>> GetByTypeAsync(ContentType type)
+        public List<Content> Search(string searchTerm, string genre = null, string type = null)
         {
-            return await _context.Contents
+            var query = _context.Contents
                 .Include(c => c.Episodes)
-                .Where(c => c.Type == type)
-                .ToListAsync();
-        }
+                .AsQueryable();
 
-        public async Task<IEnumerable<Content>> GetByGenreAsync(string genre)
-        {
-            return await _context.Contents
-                .Include(c => c.Episodes)
-                .Where(c => c.Genre == genre)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<Content>> SearchAsync(string searchTerm)
-        {
-            if (string.IsNullOrEmpty(searchTerm))
-                return await GetAllAsync();
-
-            return await _context.Contents
-                .Include(c => c.Episodes)
-                .Where(c => c.Title.Contains(searchTerm) ||
-                           c.Description.Contains(searchTerm) ||
-                           c.Genre.Contains(searchTerm))
-                .ToListAsync();
-        }
-
-        public async Task<bool> AddAsync(Content content)
-        {
-            try
+            if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                await _context.Contents.AddAsync(content);
-                await _context.SaveChangesAsync();
-                return true;
+                query = query.Where(c => c.Title.Contains(searchTerm) || c.Description.Contains(searchTerm));
             }
-            catch (Exception)
+
+            if (!string.IsNullOrWhiteSpace(genre))
             {
-                return false;
+                query = query.Where(c => c.Genre == genre);
             }
+
+            if (!string.IsNullOrWhiteSpace(type))
+            {
+                query = query.Where(c => c.Type == type);
+            }
+
+            return query.ToList();
         }
 
-        public async Task<bool> UpdateAsync(Content content)
+        public void Add(Content content)
         {
-            try
-            {
-                _context.Contents.Update(content);
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            _context.Contents.Add(content);
+            _context.SaveChanges();
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public void Update(Content content)
         {
-            try
-            {
-                var content = await _context.Contents.FindAsync(id);
-                if (content == null)
-                    return false;
+            // Get existing content with episodes
+            var existingContent = _context.Contents
+                .Include(c => c.Episodes)
+                .FirstOrDefault(c => c.Id == content.Id);
 
+            if (existingContent == null)
+            {
+                throw new Exception($"Content with ID {content.Id} not found.");
+            }
+
+            // Update content properties
+            existingContent.Title = content.Title;
+            existingContent.Description = content.Description;
+            existingContent.ReleaseYear = content.ReleaseYear;
+            existingContent.Genre = content.Genre;
+            existingContent.Type = content.Type;
+            existingContent.Platform = content.Platform;
+            existingContent.Duration = content.Duration;
+
+            // Handle episodes
+            if (content.Type == "Movie")
+            {
+                // Remove all episodes if content is now a movie
+                _context.Episodes.RemoveRange(existingContent.Episodes);
+                existingContent.Episodes.Clear();
+            }
+            else
+            {
+                // Update episodes for series
+                // Remove episodes that are not in the updated list
+                var episodesToRemove = existingContent.Episodes
+                    .Where(e => !content.Episodes.Any(ne => ne.Id == e.Id))
+                    .ToList();
+
+                foreach (var episode in episodesToRemove)
+                {
+                    existingContent.Episodes.Remove(episode);
+                    _context.Episodes.Remove(episode);
+                }
+
+                // Update existing episodes and add new ones
+                foreach (var episode in content.Episodes)
+                {
+                    var existingEpisode = existingContent.Episodes
+                        .FirstOrDefault(e => e.Id == episode.Id);
+
+                    if (existingEpisode != null)
+                    {
+                        // Update existing episode
+                        existingEpisode.EpisodeNumber = episode.EpisodeNumber;
+                        existingEpisode.Title = episode.Title;
+                        existingEpisode.Duration = episode.Duration;
+                    }
+                    else
+                    {
+                        // Add new episode
+                        existingContent.Episodes.Add(new Episode
+                        {
+                            EpisodeNumber = episode.EpisodeNumber,
+                            Title = episode.Title,
+                            Duration = episode.Duration
+                        });
+                    }
+                }
+            }
+
+            _context.SaveChanges();
+        }
+
+        public void Delete(int id)
+        {
+            var content = _context.Contents
+                .Include(c => c.Episodes)
+                .FirstOrDefault(c => c.Id == id);
+
+            if (content != null)
+            {
+                // Remove related episodes first
+                _context.Episodes.RemoveRange(content.Episodes);
+
+                // Remove the content
                 _context.Contents.Remove(content);
-                await _context.SaveChangesAsync();
-                return true;
+                _context.SaveChanges();
             }
-            catch (Exception)
-            {
-                return false;
-            }
+        }
+
+        public List<string> GetAllGenres()
+        {
+            return _context.Contents
+                .Select(c => c.Genre)
+                .Distinct()
+                .OrderBy(g => g)
+                .ToList();
+        }
+
+        public List<string> GetAllPlatforms()
+        {
+            return _context.Contents
+                .Select(c => c.Platform)
+                .Distinct()
+                .OrderBy(p => p)
+                .ToList();
         }
     }
 }
+
