@@ -1,297 +1,278 @@
-﻿using Microsoft.EntityFrameworkCore;
-using NetWatchApp.Classes.Models;
+﻿using NetWatchApp.Classes.Models;
 using NetWatchApp.Data.EntityFramework;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace NetWatchApp.Data.SeedData
 {
-    public static class DataSeeder
+    public class DataSeeder
     {
-        public static void SeedData(NetWatchDbContext context)
+        private readonly NetWatchDbContext _context;
+
+        public DataSeeder(NetWatchDbContext context)
         {
-            // Only seed if the database is empty
-            if (context.Users.Any() || context.Contents.Any())
-                return;
+            _context = context;
+        }
+
+        public void Seed()
+        {
+            // Create database if it doesn't exist
+            _context.Database.EnsureCreated();
+
+            // Check if there's already data
+            if (_context.Users.Any() || _context.Contents.Any())
+            {
+                return; // Database already seeded
+            }
 
             // Seed users
-            SeedUsers(context);
+            SeedUsers();
 
             // Seed content
-            SeedContent(context);
-
-            // Seed viewing history
-            SeedViewingHistory(context);
+            SeedContent();
 
             // Seed ratings
-            SeedRatings(context);
+            SeedRatings();
+
+            // Seed viewing history
+            SeedViewingHistory();
+
+            // Save all changes
+            _context.SaveChanges();
         }
 
-        private static void SeedUsers(NetWatchDbContext context)
+        private void SeedUsers()
         {
-            var users = new List<User>
+            // Add admin user
+            var adminUser = new User
             {
-                new User
-                {
-                    IdentificationNumber = "1234567890",
-                    Name = "Admin User",
-                    Email = "admin@netwatch.com",
-                    PasswordHash = HashPassword("admin"),
-                    IsAdmin = true,
-                    RegistrationDate = DateTime.Now.AddMonths(-6)
-                },
-                new User
-                {
-                    IdentificationNumber = "0987654321",
-                    Name = "Regular User",
-                    Email = "user@netwatch.com",
-                    PasswordHash = HashPassword("user"),
-                    IsAdmin = false,
-                    RegistrationDate = DateTime.Now.AddMonths(-3)
-                }
+                IdentificationNumber = "ADMIN001",
+                FirstName = "Admin",
+                LastName = "User",
+                Email = "admin@netwatch.com",
+                Password = "admin123", 
+                IsAdmin = true,
+                RegistrationDate = DateTime.Now.AddMonths(-6)
             };
 
-            // Add 50 more random users
-            for (int i = 1; i <= 50; i++)
+            // Add regular users
+            var user1 = new User
             {
-                users.Add(new User
-                {
-                    IdentificationNumber = $"USER{i:D6}",
-                    Name = $"Test User {i}",
-                    Email = $"user{i}@netwatch.com",
-                    PasswordHash = HashPassword("password"),
-                    IsAdmin = false,
-                    RegistrationDate = DateTime.Now.AddDays(-Random.Shared.Next(1, 365))
-                });
-            }
-
-            context.Users.AddRange(users);
-            context.SaveChanges();
-        }
-
-        private static void SeedContent(NetWatchDbContext context)
-        {
-            // Seed movies
-            var movies = new List<Content>();
-            string[] movieGenres = { "Action", "Comedy", "Drama", "Sci-Fi", "Horror", "Romance", "Thriller", "Fantasy", "Animation", "Documentary" };
-            string[] platforms = { "Netflix", "Amazon Prime", "Disney+", "HBO Max", "Hulu", "Apple TV+", "Paramount+" };
-
-            for (int i = 1; i <= 50; i++)
-            {
-                var movie = new Content
-                {
-                    Title = $"Movie {i}",
-                    Type = ContentType.Movie,
-                    Description = $"This is a description for Movie {i}. It's a great movie that you should definitely watch.",
-                    Genre = movieGenres[Random.Shared.Next(movieGenres.Length)],
-                    ReleaseYear = Random.Shared.Next(2000, 2023),
-                    DurationMinutes = Random.Shared.Next(90, 180),
-                    Platform = platforms[Random.Shared.Next(platforms.Length)],
-                    ImagePath = $"/Images/movie{i}.jpg"
-                };
-
-                movies.Add(movie);
-            }
-
-            context.Contents.AddRange(movies);
-            context.SaveChanges();
-
-            // Seed series
-            var series = new List<Content>();
-
-            for (int i = 1; i <= 30; i++)
-            {
-                var seriesContent = new Content
-                {
-                    Title = $"Series {i}",
-                    Type = ContentType.Series,
-                    Description = $"This is a description for Series {i}. It's an exciting series with multiple seasons.",
-                    Genre = movieGenres[Random.Shared.Next(movieGenres.Length)],
-                    ReleaseYear = Random.Shared.Next(2000, 2023),
-                    DurationMinutes = 0, // Total duration will be sum of episodes
-                    Platform = platforms[Random.Shared.Next(platforms.Length)],
-                    ImagePath = $"/Images/series{i}.jpg"
-                };
-
-                series.Add(seriesContent);
-            }
-
-            context.Contents.AddRange(series);
-            context.SaveChanges();
-
-            // Seed episodes for series
-            foreach (var seriesContent in series)
-            {
-                int seasons = Random.Shared.Next(1, 6);
-
-                for (int season = 1; season <= seasons; season++)
-                {
-                    int episodes = Random.Shared.Next(8, 16);
-
-                    for (int episode = 1; episode <= episodes; episode++)
-                    {
-                        var episodeEntity = new Episode
-                        {
-                            Title = $"Episode {episode}",
-                            SeasonNumber = season,
-                            EpisodeNumber = episode,
-                            DurationMinutes = Random.Shared.Next(30, 61),
-                            Description = $"Season {season}, Episode {episode} of {seriesContent.Title}",
-                            ContentId = seriesContent.Id
-                        };
-
-                        context.Episodes.Add(episodeEntity);
-                    }
-                }
-            }
-
-            context.SaveChanges();
-        }
-
-        private static void SeedViewingHistory(NetWatchDbContext context)
-        {
-            var users = context.Users.ToList();
-            var contents = context.Contents.Include(c => c.Episodes).ToList();
-            var viewingHistories = new List<ViewingHistory>();
-
-            // Each user watches some content
-            foreach (var user in users)
-            {
-                // Number of content items this user has watched
-                int watchCount = Random.Shared.Next(5, 21);
-
-                // Get random content items for this user
-                var watchedContent = contents
-                    .OrderBy(c => Guid.NewGuid()) // Random order
-                    .Take(watchCount)
-                    .ToList();
-
-                foreach (var content in watchedContent)
-                {
-                    if (content.Type == ContentType.Movie)
-                    {
-                        // Create viewing history for movie
-                        var viewingHistory = new ViewingHistory
-                        {
-                            UserId = user.Id,
-                            ContentId = content.Id,
-                            ViewDate = DateTime.Now.AddDays(-Random.Shared.Next(1, 180)),
-                            WatchedMinutes = content.DurationMinutes,
-                            Completed = Random.Shared.Next(100) < 80 // 80% chance of completing
-                        };
-
-                        viewingHistories.Add(viewingHistory);
-                    }
-                    else if (content.Type == ContentType.Series && content.Episodes.Any())
-                    {
-                        // For series, watch some episodes
-                        int episodeCount = Random.Shared.Next(1, content.Episodes.Count + 1);
-                        var watchedEpisodes = content.Episodes
-                            .OrderBy(e => e.SeasonNumber)
-                            .ThenBy(e => e.EpisodeNumber)
-                            .Take(episodeCount)
-                            .ToList();
-
-                        foreach (var episode in watchedEpisodes)
-                        {
-                            var viewingHistory = new ViewingHistory
-                            {
-                                UserId = user.Id,
-                                ContentId = content.Id,
-                                EpisodeId = episode.Id,
-                                ViewDate = DateTime.Now.AddDays(-Random.Shared.Next(1, 180)),
-                                WatchedMinutes = episode.DurationMinutes,
-                                Completed = Random.Shared.Next(100) < 85 // 85% chance of completing
-                            };
-
-                            viewingHistories.Add(viewingHistory);
-                        }
-                    }
-                }
-            }
-
-            context.ViewingHistories.AddRange(viewingHistories);
-            context.SaveChanges();
-        }
-
-        private static void SeedRatings(NetWatchDbContext context)
-        {
-            var users = context.Users.ToList();
-            var contents = context.Contents.ToList();
-            var ratings = new List<Rating>();
-
-            // Each user rates some content
-            foreach (var user in users)
-            {
-                // Number of content items this user has rated
-                int rateCount = Random.Shared.Next(3, 11);
-
-                // Get random content items for this user to rate
-                var ratedContent = contents
-                    .OrderBy(c => Guid.NewGuid()) // Random order
-                    .Take(rateCount)
-                    .ToList();
-
-                foreach (var content in ratedContent)
-                {
-                    var rating = new Rating
-                    {
-                        UserId = user.Id,
-                        ContentId = content.Id,
-                        Score = Random.Shared.Next(1, 6), // Rating from 1 to 5
-                        Comment = GetRandomComment(),
-                        RatingDate = DateTime.Now.AddDays(-Random.Shared.Next(1, 90))
-                    };
-
-                    ratings.Add(rating);
-                }
-            }
-
-            context.Ratings.AddRange(ratings);
-            context.SaveChanges();
-        }
-
-        private static string HashPassword(string password)
-        {
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    builder.Append(bytes[i].ToString("x2"));
-                }
-
-                return builder.ToString();
-            }
-        }
-
-        private static string GetRandomComment()
-        {
-            string[] comments =
-            {
-                "Really enjoyed this!",
-                "Not my favorite, but still good.",
-                "Absolutely loved it, would watch again.",
-                "Decent, but could have been better.",
-                "Amazing storyline and characters.",
-                "The ending was disappointing.",
-                "Great acting, weak plot.",
-                "Highly recommend to everyone!",
-                "Wouldn't watch again.",
-                "A masterpiece!",
-                "Mediocre at best.",
-                "Exceeded my expectations.",
-                "Waste of time.",
-                "Perfect for a weekend watch.",
-                "The visuals were stunning."
+                IdentificationNumber = "USER001",
+                FirstName = "John",
+                LastName = "Doe",
+                Email = "john.doe@example.com",
+                Password = "password123", 
+                IsAdmin = false,
+                RegistrationDate = DateTime.Now.AddMonths(-3)
             };
 
-            return comments[Random.Shared.Next(comments.Length)];
+            var user2 = new User
+            {
+                IdentificationNumber = "USER002",
+                FirstName = "Jane",
+                LastName = "Smith",
+                Email = "jane.smith@example.com",
+                Password = "password123", 
+                IsAdmin = false,
+                RegistrationDate = DateTime.Now.AddMonths(-2)
+            };
+
+            _context.Users.Add(adminUser);
+            _context.Users.Add(user1);
+            _context.Users.Add(user2);
+        }
+
+        private void SeedContent()
+        {
+            // Add movies
+            var movie1 = new Content
+            {
+                Title = "The Matrix",
+                Description = "A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers.",
+                ReleaseYear = 1999,
+                Genre = "Sci-Fi",
+                Type = "Movie",
+                Platform = "Netflix",
+                Duration = 136
+            };
+
+            var movie2 = new Content
+            {
+                Title = "Inception",
+                Description = "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
+                ReleaseYear = 2010,
+                Genre = "Sci-Fi",
+                Type = "Movie",
+                Platform = "HBO Max",
+                Duration = 148
+            };
+
+            var movie3 = new Content
+            {
+                Title = "The Shawshank Redemption",
+                Description = "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",
+                ReleaseYear = 1994,
+                Genre = "Drama",
+                Type = "Movie",
+                Platform = "Amazon Prime",
+                Duration = 142
+            };
+
+            // Add series with episodes
+            var series1 = new Content
+            {
+                Title = "Stranger Things",
+                Description = "When a young boy disappears, his mother, a police chief, and his friends must confront terrifying supernatural forces in order to get him back.",
+                ReleaseYear = 2016,
+                Genre = "Sci-Fi",
+                Type = "Series",
+                Platform = "Netflix",
+                Duration = 0
+            };
+
+            series1.Episodes.Add(new Episode
+            {
+                EpisodeNumber = 1,
+                Title = "Chapter One: The Vanishing of Will Byers",
+                Duration = 47
+            });
+
+            series1.Episodes.Add(new Episode
+            {
+                EpisodeNumber = 2,
+                Title = "Chapter Two: The Weirdo on Maple Street",
+                Duration = 55
+            });
+
+            series1.Episodes.Add(new Episode
+            {
+                EpisodeNumber = 3,
+                Title = "Chapter Three: Holly, Jolly",
+                Duration = 51
+            });
+
+            var series2 = new Content
+            {
+                Title = "Breaking Bad",
+                Description = "A high school chemistry teacher diagnosed with inoperable lung cancer turns to manufacturing and selling methamphetamine in order to secure his family's future.",
+                ReleaseYear = 2008,
+                Genre = "Drama",
+                Type = "Series",
+                Platform = "Netflix",
+                Duration = 0
+            };
+
+            series2.Episodes.Add(new Episode
+            {
+                EpisodeNumber = 1,
+                Title = "Pilot",
+                Duration = 58
+            });
+
+            series2.Episodes.Add(new Episode
+            {
+                EpisodeNumber = 2,
+                Title = "Cat's in the Bag...",
+                Duration = 48
+            });
+
+            series2.Episodes.Add(new Episode
+            {
+                EpisodeNumber = 3,
+                Title = "...And the Bag's in the River",
+                Duration = 48
+            });
+
+            _context.Contents.Add(movie1);
+            _context.Contents.Add(movie2);
+            _context.Contents.Add(movie3);
+            _context.Contents.Add(series1);
+            _context.Contents.Add(series2);
+        }
+
+        private void SeedRatings()
+        {
+            var users = _context.Users.ToList();
+            var contents = _context.Contents.ToList();
+
+            // Add some ratings
+            _context.Ratings.Add(new Rating
+            {
+                UserId = users[1].Id, // John Doe
+                ContentId = contents[0].Id, // The Matrix
+                Score = 5,
+                Comment = "One of the best sci-fi movies ever made!",
+                RatingDate = DateTime.Now.AddDays(-30)
+            });
+
+            _context.Ratings.Add(new Rating
+            {
+                UserId = users[2].Id, // Jane Smith
+                ContentId = contents[0].Id, // The Matrix
+                Score = 4,
+                Comment = "Great movie, amazing special effects.",
+                RatingDate = DateTime.Now.AddDays(-25)
+            });
+
+            _context.Ratings.Add(new Rating
+            {
+                UserId = users[1].Id, // John Doe
+                ContentId = contents[3].Id, // Stranger Things
+                Score = 5,
+                Comment = "Addictive series with great characters.",
+                RatingDate = DateTime.Now.AddDays(-20)
+            });
+
+            _context.Ratings.Add(new Rating
+            {
+                UserId = users[2].Id, // Jane Smith
+                ContentId = contents[4].Id, // Breaking Bad
+                Score = 5,
+                Comment = "Possibly the best TV show ever made.",
+                RatingDate = DateTime.Now.AddDays(-15)
+            });
+        }
+
+        private void SeedViewingHistory()
+        {
+            var users = _context.Users.ToList();
+            var contents = _context.Contents.ToList();
+
+            // Add viewing history for movies
+            _context.ViewingHistories.Add(new ViewingHistory
+            {
+                UserId = users[1].Id, // John Doe
+                ContentId = contents[0].Id, // The Matrix
+                WatchDate = DateTime.Now.AddDays(-40),
+                WatchedEpisodes = ""
+            });
+
+            _context.ViewingHistories.Add(new ViewingHistory
+            {
+                UserId = users[2].Id, // Jane Smith
+                ContentId = contents[0].Id, // The Matrix
+                WatchDate = DateTime.Now.AddDays(-35),
+                WatchedEpisodes = ""
+            });
+
+            // Add viewing history for series with episodes
+            _context.ViewingHistories.Add(new ViewingHistory
+            {
+                UserId = users[1].Id, // John Doe
+                ContentId = contents[3].Id, // Stranger Things
+                WatchDate = DateTime.Now.AddDays(-25),
+                WatchedEpisodes = "1,2,3" // Watched episodes 1, 2, and 3
+            });
+
+            _context.ViewingHistories.Add(new ViewingHistory
+            {
+                UserId = users[2].Id, // Jane Smith
+                ContentId = contents[4].Id, // Breaking Bad
+                WatchDate = DateTime.Now.AddDays(-20),
+                WatchedEpisodes = "1,2" // Watched episodes 1 and 2
+            });
         }
     }
 }
+

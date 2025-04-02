@@ -5,9 +5,6 @@ using NetWatchApp.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NetWatchApp.Classes.Repositories
 {
@@ -20,108 +17,94 @@ namespace NetWatchApp.Classes.Repositories
             _context = context;
         }
 
-        public async Task<User> GetByIdAsync(int id)
+        public List<User> GetAll()
         {
-            return await _context.Users.FindAsync(id);
+            return _context.Users.ToList();
         }
 
-        public async Task<User> GetByIdentificationNumberAsync(string identificationNumber)
+        public User GetById(int id)
         {
-            return await _context.Users
-                .FirstOrDefaultAsync(u => u.IdentificationNumber == identificationNumber);
+            return _context.Users.Find(id);
         }
 
-        public async Task<IEnumerable<User>> GetAllAsync()
+        public User GetByEmail(string email)
         {
-            return await _context.Users.ToListAsync();
+            return _context.Users.FirstOrDefault(u => u.Email == email);
         }
 
-        public async Task<bool> AddAsync(User user)
+        public User GetByIdentificationNumber(string identificationNumber)
         {
-            try
+            return _context.Users.FirstOrDefault(u => u.IdentificationNumber == identificationNumber);
+        }
+
+        public User Authenticate(string email, string password)
+        {
+            return _context.Users.FirstOrDefault(u => u.Email == email && u.Password == password);
+        }
+
+        public void Add(User user)
+        {
+            // Check if email already exists
+            if (_context.Users.Any(u => u.Email == user.Email))
             {
-                // Hash the password before storing
-                user.PasswordHash = HashPassword(user.PasswordHash);
-
-                await _context.Users.AddAsync(user);
-                await _context.SaveChangesAsync();
-                return true;
+                throw new Exception("Email already exists.");
             }
-            catch (Exception)
+
+            // Check if identification number already exists
+            if (_context.Users.Any(u => u.IdentificationNumber == user.IdentificationNumber))
             {
-                return false;
+                throw new Exception("Identification number already exists.");
             }
+
+            _context.Users.Add(user);
+            _context.SaveChanges();
         }
 
-        public async Task<bool> UpdateAsync(User user)
+        public void Update(User user)
         {
-            try
+            var existingUser = _context.Users.Find(user.Id);
+            if (existingUser == null)
             {
-                // Check if the password has been changed (not already hashed)
-                var existingUser = await _context.Users.FindAsync(user.Id);
-                if (existingUser != null && existingUser.PasswordHash != user.PasswordHash)
-                {
-                    // Hash the new password
-                    user.PasswordHash = HashPassword(user.PasswordHash);
-                }
+                throw new Exception($"User with ID {user.Id} not found.");
+            }
 
-                _context.Users.Update(user);
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            catch (Exception)
+            // Check if email already exists for another user
+            if (_context.Users.Any(u => u.Email == user.Email && u.Id != user.Id))
             {
-                return false;
+                throw new Exception("Email already exists.");
             }
+
+            // Check if identification number already exists for another user
+            if (_context.Users.Any(u => u.IdentificationNumber == user.IdentificationNumber && u.Id != user.Id))
+            {
+                throw new Exception("Identification number already exists.");
+            }
+
+            existingUser.FirstName = user.FirstName;
+            existingUser.LastName = user.LastName;
+            existingUser.Email = user.Email;
+            existingUser.IdentificationNumber = user.IdentificationNumber;
+
+            // Only update password if it's not empty
+            if (!string.IsNullOrEmpty(user.Password))
+            {
+                existingUser.Password = user.Password;
+            }
+
+            existingUser.IsAdmin = user.IsAdmin;
+
+            _context.SaveChanges();
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public void Delete(int id)
         {
-            try
+            var user = _context.Users.Find(id);
+            if (user != null)
             {
-                var user = await _context.Users.FindAsync(id);
-                if (user == null)
-                    return false;
-
                 _context.Users.Remove(user);
-                await _context.SaveChangesAsync();
-                return true;
+                _context.SaveChanges();
             }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        public async Task<bool> ValidateCredentialsAsync(string identificationNumber, string password)
-        {
-            var user = await GetByIdentificationNumberAsync(identificationNumber);
-            if (user == null)
-                return false;
-
-            return VerifyPassword(password, user.PasswordHash);
-        }
-
-        private string HashPassword(string password)
-        {
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    builder.Append(bytes[i].ToString("x2"));
-                }
-
-                return builder.ToString();
-            }
-        }
-
-        private bool VerifyPassword(string password, string hashedPassword)
-        {
-            string hashedInput = HashPassword(password);
-            return hashedInput == hashedPassword;
         }
     }
 }
+

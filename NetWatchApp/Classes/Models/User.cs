@@ -6,31 +6,45 @@ namespace NetWatchApp.Classes.Models
 {
     public class User
     {
+        public User()
+        {
+            Ratings = new List<Rating>();
+            ViewingHistories = new List<ViewingHistory>();
+        }
+
         [Key]
         public int Id { get; set; }
 
         [Required]
-        [StringLength(20)]
+        [MaxLength(20)]
         public string IdentificationNumber { get; set; }
 
         [Required]
-        [StringLength(100)]
-        public string Name { get; set; }
+        [MaxLength(50)]
+        public string FirstName { get; set; }
 
         [Required]
-        [StringLength(100)]
+        [MaxLength(50)]
+        public string LastName { get; set; }
+
+        [Required]
+        [MaxLength(100)]
         [EmailAddress]
         public string Email { get; set; }
 
         [Required]
-        public string PasswordHash { get; set; }
+        [MaxLength(100)]
+        public string Password { get; set; }
 
+        [Required]
         public bool IsAdmin { get; set; }
 
+        [Required]
         public DateTime RegistrationDate { get; set; }
 
         // Navigation properties
-        public virtual ICollection<ViewingHistory> ViewingHistories { get; set; }
         public virtual ICollection<Rating> Ratings { get; set; }
+        public virtual ICollection<ViewingHistory> ViewingHistories { get; set; }
     }
 }
+

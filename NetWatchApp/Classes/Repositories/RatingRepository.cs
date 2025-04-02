@@ -5,7 +5,6 @@ using NetWatchApp.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace NetWatchApp.Classes.Repositories
 {
@@ -18,106 +17,90 @@ namespace NetWatchApp.Classes.Repositories
             _context = context;
         }
 
-        public async Task<Rating> GetByIdAsync(int id)
+        public List<Rating> GetAll()
         {
-            return await _context.Ratings
+            return _context.Ratings
                 .Include(r => r.User)
                 .Include(r => r.Content)
-                .FirstOrDefaultAsync(r => r.Id == id);
+                .ToList();
         }
 
-        public async Task<IEnumerable<Rating>> GetByUserIdAsync(int userId)
+        public Rating GetById(int id)
         {
-            return await _context.Ratings
+            return _context.Ratings
+                .Include(r => r.User)
+                .Include(r => r.Content)
+                .FirstOrDefault(r => r.Id == id);
+        }
+
+        public List<Rating> GetByUser(int userId)
+        {
+            return _context.Ratings
+                .Include(r => r.Content)
                 .Where(r => r.UserId == userId)
-                .Include(r => r.Content)
-                .OrderByDescending(r => r.RatingDate)
-                .ToListAsync();
+                .ToList();
         }
 
-        public async Task<IEnumerable<Rating>> GetByContentIdAsync(int contentId)
+        public List<Rating> GetByContent(int contentId)
         {
-            return await _context.Ratings
-                .Where(r => r.ContentId == contentId)
+            return _context.Ratings
                 .Include(r => r.User)
-                .OrderByDescending(r => r.RatingDate)
-                .ToListAsync();
+                .Where(r => r.ContentId == contentId)
+                .ToList();
         }
 
-        public async Task<double> GetAverageRatingForContentAsync(int contentId)
+        public Rating GetByUserAndContent(int userId, int contentId)
         {
-            var ratings = await _context.Ratings
-                .Where(r => r.ContentId == contentId)
-                .ToListAsync();
+            return _context.Ratings
+                .FirstOrDefault(r => r.UserId == userId && r.ContentId == contentId);
+        }
 
-            if (!ratings.Any())
+        public void Add(Rating rating)
+        {
+            // Check if user already rated this content
+            var existingRating = GetByUserAndContent(rating.UserId, rating.ContentId);
+            if (existingRating != null)
+            {
+                throw new Exception("User has already rated this content.");
+            }
+
+            _context.Ratings.Add(rating);
+            _context.SaveChanges();
+        }
+
+        public void Update(Rating rating)
+        {
+            var existingRating = _context.Ratings.Find(rating.Id);
+            if (existingRating == null)
+            {
+                throw new Exception($"Rating with ID {rating.Id} not found.");
+            }
+
+            existingRating.Score = rating.Score;
+            existingRating.Comment = rating.Comment;
+            existingRating.RatingDate = rating.RatingDate;
+
+            _context.SaveChanges();
+        }
+
+        public void Delete(int id)
+        {
+            var rating = _context.Ratings.Find(id);
+            if (rating != null)
+            {
+                _context.Ratings.Remove(rating);
+                _context.SaveChanges();
+            }
+        }
+
+        public double GetAverageRatingForContent(int contentId)
+        {
+            var ratings = GetByContent(contentId);
+            if (ratings.Count == 0)
                 return 0;
 
-            return ratings.Average(r => r.Score);
-        }
-
-        public async Task<bool> AddAsync(Rating rating)
-        {
-            try
-            {
-                // Check if user already rated this content
-                var existingRating = await _context.Ratings
-                    .FirstOrDefaultAsync(r => r.UserId == rating.UserId && r.ContentId == rating.ContentId);
-
-                if (existingRating != null)
-                {
-                    // Update existing rating
-                    existingRating.Score = rating.Score;
-                    existingRating.Comment = rating.Comment;
-                    existingRating.RatingDate = DateTime.Now;
-
-                    _context.Ratings.Update(existingRating);
-                }
-                else
-                {
-                    // Add new rating
-                    await _context.Ratings.AddAsync(rating);
-                }
-
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        public async Task<bool> UpdateAsync(Rating rating)
-        {
-            try
-            {
-                _context.Ratings.Update(rating);
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        public async Task<bool> DeleteAsync(int id)
-        {
-            try
-            {
-                var rating = await _context.Ratings.FindAsync(id);
-                if (rating == null)
-                    return false;
-
-                _context.Ratings.Remove(rating);
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return Math.Round(ratings.Average(r => r.Score), 1);
         }
     }
 }
+

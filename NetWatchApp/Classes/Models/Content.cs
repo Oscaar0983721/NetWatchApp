@@ -42,7 +42,7 @@ namespace NetWatchApp.Classes.Models
 
         public int Duration { get; set; } // In minutes (for movies)
 
-        // New property for image
+        // Property for image
         [MaxLength(255)]
         public string ImagePath { get; set; }
 

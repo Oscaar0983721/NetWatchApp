@@ -2,6 +2,7 @@
 using NetWatchApp.Classes.Repositories;
 using NetWatchApp.Data.EntityFramework;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -11,290 +12,396 @@ namespace NetWatchApp.Forms
     public partial class StatisticsForm : Form
     {
         private readonly User _currentUser;
-        private readonly ViewingHistoryRepository _viewingHistoryRepository;
         private readonly ContentRepository _contentRepository;
+        private readonly ViewingHistoryRepository _viewingHistoryRepository;
+        private readonly RatingRepository _ratingRepository;
 
         public StatisticsForm(User currentUser)
         {
             InitializeComponent();
             _currentUser = currentUser;
-            _viewingHistoryRepository = new ViewingHistoryRepository(new NetWatchDbContext());
             _contentRepository = new ContentRepository(new NetWatchDbContext());
+            _viewingHistoryRepository = new ViewingHistoryRepository(new NetWatchDbContext());
+            _ratingRepository = new RatingRepository(new NetWatchDbContext());
 
-            LoadStatistics();
+            // Load statistics
+            LoadWatchingStatistics();
+            LoadGenreStatistics();
+            LoadRatingStatistics();
         }
 
         private void InitializeComponent()
         {
             this.lblTitle = new System.Windows.Forms.Label();
-            this.pnlWatchTime = new System.Windows.Forms.Panel();
-            this.lblWatchTimeTitle = new System.Windows.Forms.Label();
+            this.tabControl = new System.Windows.Forms.TabControl();
+            this.tabWatching = new System.Windows.Forms.TabPage();
+            this.tabGenres = new System.Windows.Forms.TabPage();
+            this.tabRatings = new System.Windows.Forms.TabPage();
+            this.lblTotalWatched = new System.Windows.Forms.Label();
             this.lblTotalWatchTime = new System.Windows.Forms.Label();
-            this.lblMoviesWatched = new System.Windows.Forms.Label();
-            this.lblEpisodesWatched = new System.Windows.Forms.Label();
-            this.pnlGenres = new System.Windows.Forms.Panel();
-            this.lblGenresTitle = new System.Windows.Forms.Label();
-            this.flpGenres = new System.Windows.Forms.FlowLayoutPanel();
-            this.pnlPlatforms = new System.Windows.Forms.Panel();
-            this.lblPlatformsTitle = new System.Windows.Forms.Label();
-            this.flpPlatforms = new System.Windows.Forms.FlowLayoutPanel();
+            this.lblRecentlyWatched = new System.Windows.Forms.Label();
+            this.dgvRecentlyWatched = new System.Windows.Forms.DataGridView();
+            this.lblFavoriteGenres = new System.Windows.Forms.Label();
+            this.pnlGenreChart = new System.Windows.Forms.Panel();
+            this.lblRatingDistribution = new System.Windows.Forms.Label();
+            this.pnlRatingChart = new System.Windows.Forms.Panel();
+            this.lblTopRated = new System.Windows.Forms.Label();
+            this.dgvTopRated = new System.Windows.Forms.DataGridView();
             this.btnClose = new System.Windows.Forms.Button();
-            this.pnlWatchTime.SuspendLayout();
-            this.pnlGenres.SuspendLayout();
-            this.pnlPlatforms.SuspendLayout();
-            this.SuspendLayout();
 
             // lblTitle
             this.lblTitle.AutoSize = true;
-            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold);
             this.lblTitle.Location = new System.Drawing.Point(20, 20);
             this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(150, 30);
-            this.lblTitle.TabIndex = 0;
+            this.lblTitle.Size = new System.Drawing.Size(200, 37);
             this.lblTitle.Text = "Your Statistics";
 
-            // pnlWatchTime
-            this.pnlWatchTime.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlWatchTime.Location = new System.Drawing.Point(20, 70);
-            this.pnlWatchTime.Name = "pnlWatchTime";
-            this.pnlWatchTime.Size = new System.Drawing.Size(360, 150);
-            this.pnlWatchTime.TabIndex = 1;
-            this.pnlWatchTime.Controls.Add(this.lblWatchTimeTitle);
-            this.pnlWatchTime.Controls.Add(this.lblTotalWatchTime);
-            this.pnlWatchTime.Controls.Add(this.lblMoviesWatched);
-            this.pnlWatchTime.Controls.Add(this.lblEpisodesWatched);
+            // tabControl
+            this.tabControl.Controls.Add(this.tabWatching);
+            this.tabControl.Controls.Add(this.tabGenres);
+            this.tabControl.Controls.Add(this.tabRatings);
+            this.tabControl.Location = new System.Drawing.Point(20, 70);
+            this.tabControl.Name = "tabControl";
+            this.tabControl.SelectedIndex = 0;
+            this.tabControl.Size = new System.Drawing.Size(760, 450);
 
-            // lblWatchTimeTitle
-            this.lblWatchTimeTitle.AutoSize = true;
-            this.lblWatchTimeTitle.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.lblWatchTimeTitle.Location = new System.Drawing.Point(10, 10);
-            this.lblWatchTimeTitle.Name = "lblWatchTimeTitle";
-            this.lblWatchTimeTitle.Size = new System.Drawing.Size(150, 21);
-            this.lblWatchTimeTitle.TabIndex = 0;
-            this.lblWatchTimeTitle.Text = "Watch Time";
+            // tabWatching
+            this.tabWatching.Controls.Add(this.lblTotalWatched);
+            this.tabWatching.Controls.Add(this.lblTotalWatchTime);
+            this.tabWatching.Controls.Add(this.lblRecentlyWatched);
+            this.tabWatching.Controls.Add(this.dgvRecentlyWatched);
+            this.tabWatching.Location = new System.Drawing.Point(4, 29);
+            this.tabWatching.Name = "tabWatching";
+            this.tabWatching.Padding = new System.Windows.Forms.Padding(3);
+            this.tabWatching.Size = new System.Drawing.Size(752, 417);
+            this.tabWatching.Text = "Watching";
+            this.tabWatching.UseVisualStyleBackColor = true;
+
+            // lblTotalWatched
+            this.lblTotalWatched.AutoSize = true;
+            this.lblTotalWatched.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.lblTotalWatched.Location = new System.Drawing.Point(20, 20);
+            this.lblTotalWatched.Name = "lblTotalWatched";
+            this.lblTotalWatched.Size = new System.Drawing.Size(200, 23);
+            this.lblTotalWatched.Text = "Total Watched: 0 titles";
 
             // lblTotalWatchTime
             this.lblTotalWatchTime.AutoSize = true;
-            this.lblTotalWatchTime.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.lblTotalWatchTime.Location = new System.Drawing.Point(10, 40);
+            this.lblTotalWatchTime.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.lblTotalWatchTime.Location = new System.Drawing.Point(20, 50);
             this.lblTotalWatchTime.Name = "lblTotalWatchTime";
-            this.lblTotalWatchTime.Size = new System.Drawing.Size(150, 19);
-            this.lblTotalWatchTime.TabIndex = 1;
+            this.lblTotalWatchTime.Size = new System.Drawing.Size(200, 23);
             this.lblTotalWatchTime.Text = "Total Watch Time: 0 hours";
 
-            // lblMoviesWatched
-            this.lblMoviesWatched.AutoSize = true;
-            this.lblMoviesWatched.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.lblMoviesWatched.Location = new System.Drawing.Point(10, 70);
-            this.lblMoviesWatched.Name = "lblMoviesWatched";
-            this.lblMoviesWatched.Size = new System.Drawing.Size(150, 19);
-            this.lblMoviesWatched.TabIndex = 2;
-            this.lblMoviesWatched.Text = "Movies Watched: 0";
+            // lblRecentlyWatched
+            this.lblRecentlyWatched.AutoSize = true;
+            this.lblRecentlyWatched.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.lblRecentlyWatched.Location = new System.Drawing.Point(20, 90);
+            this.lblRecentlyWatched.Name = "lblRecentlyWatched";
+            this.lblRecentlyWatched.Size = new System.Drawing.Size(150, 23);
+            this.lblRecentlyWatched.Text = "Recently Watched";
 
-            // lblEpisodesWatched
-            this.lblEpisodesWatched.AutoSize = true;
-            this.lblEpisodesWatched.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.lblEpisodesWatched.Location = new System.Drawing.Point(10, 100);
-            this.lblEpisodesWatched.Name = "lblEpisodesWatched";
-            this.lblEpisodesWatched.Size = new System.Drawing.Size(150, 19);
-            this.lblEpisodesWatched.TabIndex = 3;
-            this.lblEpisodesWatched.Text = "Episodes Watched: 0";
+            // dgvRecentlyWatched
+            this.dgvRecentlyWatched.AllowUserToAddRows = false;
+            this.dgvRecentlyWatched.AllowUserToDeleteRows = false;
+            this.dgvRecentlyWatched.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvRecentlyWatched.Location = new System.Drawing.Point(20, 120);
+            this.dgvRecentlyWatched.Name = "dgvRecentlyWatched";
+            this.dgvRecentlyWatched.ReadOnly = true;
+            this.dgvRecentlyWatched.RowHeadersWidth = 51;
+            this.dgvRecentlyWatched.Size = new System.Drawing.Size(710, 280);
 
-            // pnlGenres
-            this.pnlGenres.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlGenres.Location = new System.Drawing.Point(20, 240);
-            this.pnlGenres.Name = "pnlGenres";
-            this.pnlGenres.Size = new System.Drawing.Size(360, 200);
-            this.pnlGenres.TabIndex = 2;
-            this.pnlGenres.Controls.Add(this.lblGenresTitle);
-            this.pnlGenres.Controls.Add(this.flpGenres);
+            // tabGenres
+            this.tabGenres.Controls.Add(this.lblFavoriteGenres);
+            this.tabGenres.Controls.Add(this.pnlGenreChart);
+            this.tabGenres.Location = new System.Drawing.Point(4, 29);
+            this.tabGenres.Name = "tabGenres";
+            this.tabGenres.Padding = new System.Windows.Forms.Padding(3);
+            this.tabGenres.Size = new System.Drawing.Size(752, 417);
+            this.tabGenres.Text = "Genres";
+            this.tabGenres.UseVisualStyleBackColor = true;
 
-            // lblGenresTitle
-            this.lblGenresTitle.AutoSize = true;
-            this.lblGenresTitle.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.lblGenresTitle.Location = new System.Drawing.Point(10, 10);
-            this.lblGenresTitle.Name = "lblGenresTitle";
-            this.lblGenresTitle.Size = new System.Drawing.Size(150, 21);
-            this.lblGenresTitle.TabIndex = 0;
-            this.lblGenresTitle.Text = "Most Watched Genres";
+            // lblFavoriteGenres
+            this.lblFavoriteGenres.AutoSize = true;
+            this.lblFavoriteGenres.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.lblFavoriteGenres.Location = new System.Drawing.Point(20, 20);
+            this.lblFavoriteGenres.Name = "lblFavoriteGenres";
+            this.lblFavoriteGenres.Size = new System.Drawing.Size(150, 23);
+            this.lblFavoriteGenres.Text = "Favorite Genres";
 
-            // flpGenres
-            this.flpGenres.AutoScroll = true;
-            this.flpGenres.Location = new System.Drawing.Point(10, 40);
-            this.flpGenres.Name = "flpGenres";
-            this.flpGenres.Size = new System.Drawing.Size(340, 150);
-            this.flpGenres.TabIndex = 1;
+            // pnlGenreChart
+            this.pnlGenreChart.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlGenreChart.Location = new System.Drawing.Point(20, 50);
+            this.pnlGenreChart.Name = "pnlGenreChart";
+            this.pnlGenreChart.Size = new System.Drawing.Size(710, 350);
 
-            // pnlPlatforms
-            this.pnlPlatforms.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlPlatforms.Location = new System.Drawing.Point(400, 70);
-            this.pnlPlatforms.Name = "pnlPlatforms";
-            this.pnlPlatforms.Size = new System.Drawing.Size(360, 200);
-            this.pnlPlatforms.TabIndex = 3;
-            this.pnlPlatforms.Controls.Add(this.lblPlatformsTitle);
-            this.pnlPlatforms.Controls.Add(this.flpPlatforms);
+            // tabRatings
+            this.tabRatings.Controls.Add(this.lblRatingDistribution);
+            this.tabRatings.Controls.Add(this.pnlRatingChart);
+            this.tabRatings.Controls.Add(this.lblTopRated);
+            this.tabRatings.Controls.Add(this.dgvTopRated);
+            this.tabRatings.Location = new System.Drawing.Point(4, 29);
+            this.tabRatings.Name = "tabRatings";
+            this.tabRatings.Padding = new System.Windows.Forms.Padding(3);
+            this.tabRatings.Size = new System.Drawing.Size(752, 417);
+            this.tabRatings.Text = "Ratings";
+            this.tabRatings.UseVisualStyleBackColor = true;
 
-            // lblPlatformsTitle
-            this.lblPlatformsTitle.AutoSize = true;
-            this.lblPlatformsTitle.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.lblPlatformsTitle.Location = new System.Drawing.Point(10, 10);
-            this.lblPlatformsTitle.Name = "lblPlatformsTitle";
-            this.lblPlatformsTitle.Size = new System.Drawing.Size(150, 21);
-            this.lblPlatformsTitle.TabIndex = 0;
-            this.lblPlatformsTitle.Text = "Most Used Platforms";
+            // lblRatingDistribution
+            this.lblRatingDistribution.AutoSize = true;
+            this.lblRatingDistribution.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.lblRatingDistribution.Location = new System.Drawing.Point(20, 20);
+            this.lblRatingDistribution.Name = "lblRatingDistribution";
+            this.lblRatingDistribution.Size = new System.Drawing.Size(150, 23);
+            this.lblRatingDistribution.Text = "Your Ratings";
 
-            // flpPlatforms
-            this.flpPlatforms.AutoScroll = true;
-            this.flpPlatforms.Location = new System.Drawing.Point(10, 40);
-            this.flpPlatforms.Name = "flpPlatforms";
-            this.flpPlatforms.Size = new System.Drawing.Size(340, 150);
-            this.flpPlatforms.TabIndex = 1;
+            // pnlRatingChart
+            this.pnlRatingChart.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlRatingChart.Location = new System.Drawing.Point(20, 50);
+            this.pnlRatingChart.Name = "pnlRatingChart";
+            this.pnlRatingChart.Size = new System.Drawing.Size(710, 150);
+
+            // lblTopRated
+            this.lblTopRated.AutoSize = true;
+            this.lblTopRated.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.lblTopRated.Location = new System.Drawing.Point(20, 210);
+            this.lblTopRated.Name = "lblTopRated";
+            this.lblTopRated.Size = new System.Drawing.Size(150, 23);
+            this.lblTopRated.Text = "Your Top Rated";
+
+            // dgvTopRated
+            this.dgvTopRated.AllowUserToAddRows = false;
+            this.dgvTopRated.AllowUserToDeleteRows = false;
+            this.dgvTopRated.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvTopRated.Location = new System.Drawing.Point(20, 240);
+            this.dgvTopRated.Name = "dgvTopRated";
+            this.dgvTopRated.ReadOnly = true;
+            this.dgvTopRated.RowHeadersWidth = 51;
+            this.dgvTopRated.Size = new System.Drawing.Size(710, 160);
 
             // btnClose
-            this.btnClose.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(122)))), ((int)(((byte)(204)))));
-            this.btnClose.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnClose.ForeColor = System.Drawing.Color.White;
-            this.btnClose.Location = new System.Drawing.Point(610, 400);
+            this.btnClose.Location = new System.Drawing.Point(680, 530);
             this.btnClose.Name = "btnClose";
-            this.btnClose.Size = new System.Drawing.Size(150, 40);
-            this.btnClose.TabIndex = 4;
+            this.btnClose.Size = new System.Drawing.Size(100, 35);
             this.btnClose.Text = "Close";
-            this.btnClose.UseVisualStyleBackColor = false;
-            this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
+            this.btnClose.UseVisualStyleBackColor = true;
+            this.btnClose.Click += (sender, e) => this.Close();
 
             // StatisticsForm
-            this.ClientSize = new System.Drawing.Size(780, 460);
+            this.ClientSize = new System.Drawing.Size(800, 580);
             this.Controls.Add(this.lblTitle);
-            this.Controls.Add(this.pnlWatchTime);
-            this.Controls.Add(this.pnlGenres);
-            this.Controls.Add(this.pnlPlatforms);
+            this.Controls.Add(this.tabControl);
             this.Controls.Add(this.btnClose);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
+            this.MinimizeBox = false;
             this.Name = "StatisticsForm";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Statistics";
-            this.pnlWatchTime.ResumeLayout(false);
-            this.pnlWatchTime.PerformLayout();
-            this.pnlGenres.ResumeLayout(false);
-            this.pnlGenres.PerformLayout();
-            this.pnlPlatforms.ResumeLayout(false);
-            this.pnlPlatforms.PerformLayout();
-            this.ResumeLayout(false);
-            this.PerformLayout();
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            this.Text = "Your Statistics";
         }
 
-        private System.Windows.Forms.Label lblTitle;
-        private System.Windows.Forms.Panel pnlWatchTime;
-        private System.Windows.Forms.Label lblWatchTimeTitle;
-        private System.Windows.Forms.Label lblTotalWatchTime;
-        private System.Windows.Forms.Label lblMoviesWatched;
-        private System.Windows.Forms.Label lblEpisodesWatched;
-        private System.Windows.Forms.Panel pnlGenres;
-        private System.Windows.Forms.Label lblGenresTitle;
-        private System.Windows.Forms.FlowLayoutPanel flpGenres;
-        private System.Windows.Forms.Panel pnlPlatforms;
-        private System.Windows.Forms.Label lblPlatformsTitle;
-        private System.Windows.Forms.FlowLayoutPanel flpPlatforms;
-        private System.Windows.Forms.Button btnClose;
-
-        private async void LoadStatistics()
+        private void LoadWatchingStatistics()
         {
-            // Get user's viewing history
-            var viewingHistory = await _viewingHistoryRepository.GetByUserIdAsync(_currentUser.Id);
-
-            // Calculate total watch time
-            int totalMinutes = viewingHistory.Sum(vh => vh.WatchedMinutes);
-            int hours = totalMinutes / 60;
-            int minutes = totalMinutes % 60;
-            lblTotalWatchTime.Text = $"Total Watch Time: {hours} hours, {minutes} minutes";
-
-            // Count movies and episodes watched
-            int moviesWatched = viewingHistory.Count(vh => vh.EpisodeId == null);
-            int episodesWatched = viewingHistory.Count(vh => vh.EpisodeId != null);
-            lblMoviesWatched.Text = $"Movies Watched: {moviesWatched}";
-            lblEpisodesWatched.Text = $"Episodes Watched: {episodesWatched}";
-
-            // Get content details for all watched content
-            var contentIds = viewingHistory.Select(vh => vh.ContentId).Distinct().ToList();
-            var watchedContent = await Task.WhenAll(contentIds.Select(id => _contentRepository.GetByIdAsync(id)));
-
-            // Calculate most watched genres
-            var genreCounts = watchedContent
-                .GroupBy(c => c.Genre)
-                .Select(g => new { Genre = g.Key, Count = g.Count() })
-                .OrderByDescending(g => g.Count)
-                .ToList();
-
-            foreach (var genre in genreCounts)
+            try
             {
-                Panel pnlGenre = new Panel
+                // Get user's viewing history
+                var viewingHistory = _viewingHistoryRepository.GetByUser(_currentUser.Id);
+
+                // Calculate total watched
+                int totalWatched = viewingHistory.Count;
+                lblTotalWatched.Text = $"Total Watched: {totalWatched} titles";
+
+                // Calculate total watch time
+                int totalMinutes = 0;
+                foreach (var history in viewingHistory)
                 {
-                    Width = 320,
-                    Height = 30,
-                    Margin = new Padding(0, 2, 0, 2)
-                };
+                    if (history.Content.Type == "Movie")
+                    {
+                        totalMinutes += history.Content.Duration;
+                    }
+                    else
+                    {
+                        // For series, calculate based on watched episodes
+                        if (!string.IsNullOrEmpty(history.WatchedEpisodes))
+                        {
+                            var watchedEpisodeIds = history.WatchedEpisodes
+                                .Split(',')
+                                .Where(s => !string.IsNullOrEmpty(s))
+                                .Select(int.Parse)
+                                .ToList();
 
-                Label lblGenre = new Label
+                            foreach (var episode in history.Content.Episodes)
+                            {
+                                if (watchedEpisodeIds.Contains(episode.EpisodeNumber))
+                                {
+                                    totalMinutes += episode.Duration;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                double totalHours = Math.Round(totalMinutes / 60.0, 1);
+                lblTotalWatchTime.Text = $"Total Watch Time: {totalHours} hours";
+
+                // Load recently watched
+                var recentlyWatched = viewingHistory
+                    .OrderByDescending(vh => vh.WatchDate)
+                    .Take(10)
+                    .ToList();
+
+                dgvRecentlyWatched.DataSource = recentlyWatched.Select(vh => new
                 {
-                    Text = genre.Genre,
-                    Location = new Point(0, 5),
-                    AutoSize = true
-                };
+                    Title = vh.Content.Title,
+                    Type = vh.Content.Type,
+                    Genre = vh.Content.Genre,
+                    Platform = vh.Content.Platform,
+                    WatchDate = vh.WatchDate.ToShortDateString()
+                }).ToList();
 
-                Label lblCount = new Label
-                {
-                    Text = genre.Count.ToString(),
-                    Location = new Point(280, 5),
-                    AutoSize = true
-                };
-
-                pnlGenre.Controls.Add(lblGenre);
-                pnlGenre.Controls.Add(lblCount);
-
-                flpGenres.Controls.Add(pnlGenre);
+                // Auto-size columns
+                dgvRecentlyWatched.AutoResizeColumns();
             }
-
-            // Calculate most used platforms
-            var platformCounts = watchedContent
-                .GroupBy(c => c.Platform)
-                .Select(g => new { Platform = g.Key, Count = g.Count() })
-                .OrderByDescending(g => g.Count)
-                .ToList();
-
-            foreach (var platform in platformCounts)
+            catch (Exception ex)
             {
-                Panel pnlPlatform = new Panel
-                {
-                    Width = 320,
-                    Height = 30,
-                    Margin = new Padding(0, 2, 0, 2)
-                };
-
-                Label lblPlatform = new Label
-                {
-                    Text = platform.Platform,
-                    Location = new Point(0, 5),
-                    AutoSize = true
-                };
-
-                Label lblCount = new Label
-                {
-                    Text = platform.Count.ToString(),
-                    Location = new Point(280, 5),
-                    AutoSize = true
-                };
-
-                pnlPlatform.Controls.Add(lblPlatform);
-                pnlPlatform.Controls.Add(lblCount);
-
-                flpPlatforms.Controls.Add(pnlPlatform);
+                MessageBox.Show($"Error loading watching statistics: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void btnClose_Click(object sender, EventArgs e)
+        private void LoadGenreStatistics()
         {
-            this.Close();
+            try
+            {
+                // Get user's viewing history
+                var viewingHistory = _viewingHistoryRepository.GetByUser(_currentUser.Id);
+
+                // Count genres
+                var genreCounts = new Dictionary<string, int>();
+                foreach (var history in viewingHistory)
+                {
+                    string genre = history.Content.Genre;
+                    if (genreCounts.ContainsKey(genre))
+                    {
+                        genreCounts[genre]++;
+                    }
+                    else
+                    {
+                        genreCounts[genre] = 1;
+                    }
+                }
+
+                // Sort by count
+                var sortedGenres = genreCounts
+                    .OrderByDescending(kv => kv.Value)
+                    .ToList();
+
+                // Draw simple bar chart
+                pnlGenreChart.Paint += (sender, e) =>
+                {
+                    Graphics g = e.Graphics;
+                    int maxCount = sortedGenres.Count > 0 ? sortedGenres.Max(kv => kv.Value) : 0;
+                    int barHeight = 30;
+                    int spacing = 10;
+                    int maxBarWidth = pnlGenreChart.Width - 150;
+
+                    for (int i = 0; i < Math.Min(sortedGenres.Count, 10); i++)
+                    {
+                        var genre = sortedGenres[i];
+                        int barWidth = maxCount > 0 ? (int)((double)genre.Value / maxCount * maxBarWidth) : 0;
+
+                        // Draw genre name
+                        g.DrawString(genre.Key, this.Font, Brushes.Black, 10, i * (barHeight + spacing) + 10);
+
+                        // Draw bar
+                        g.FillRectangle(Brushes.SteelBlue, 120, i * (barHeight + spacing) + 10, barWidth, barHeight);
+
+                        // Draw count
+                        g.DrawString(genre.Value.ToString(), this.Font, Brushes.Black,
+                            120 + barWidth + 5, i * (barHeight + spacing) + 10);
+                    }
+                };
+
+                pnlGenreChart.Invalidate();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading genre statistics: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void LoadRatingStatistics()
+        {
+            try
+            {
+                // Get user's ratings
+                var ratings = _ratingRepository.GetByUser(_currentUser.Id);
+
+                // Count ratings by score
+                var ratingCounts = new int[6]; // Index 0 not used, ratings are 1-5
+                foreach (var rating in ratings)
+                {
+                    ratingCounts[rating.Score]++;
+                }
+
+                // Draw simple bar chart for rating distribution
+                pnlRatingChart.Paint += (sender, e) =>
+                {
+                    Graphics g = e.Graphics;
+                    int maxCount = ratingCounts.Max();
+                    int barWidth = 50;
+                    int spacing = 20;
+                    int maxBarHeight = pnlRatingChart.Height - 50;
+
+                    for (int i = 1; i <= 5; i++)
+                    {
+                        int barHeight = maxCount > 0 ? (int)((double)ratingCounts[i] / maxCount * maxBarHeight) : 0;
+
+                        // Draw bar
+                        g.FillRectangle(Brushes.SteelBlue,
+                            50 + (i - 1) * (barWidth + spacing),
+                            pnlRatingChart.Height - 30 - barHeight,
+                            barWidth, barHeight);
+
+                        // Draw rating number
+                        g.DrawString(i.ToString(), this.Font, Brushes.Black,
+                            50 + (i - 1) * (barWidth + spacing) + barWidth / 2 - 5,
+                            pnlRatingChart.Height - 25);
+
+                        // Draw count
+                        g.DrawString(ratingCounts[i].ToString(), this.Font, Brushes.Black,
+                            50 + (i - 1) * (barWidth + spacing) + barWidth / 2 - 5,
+                            pnlRatingChart.Height - 40 - barHeight);
+                    }
+                };
+
+                pnlRatingChart.Invalidate();
+
+                // Load top rated content
+                var topRated = ratings
+                    .Where(r => r.Score >= 4) // 4 or 5 stars
+                    .OrderByDescending(r => r.Score)
+                    .ThenByDescending(r => r.RatingDate)
+                    .Take(10)
+                    .ToList();
+
+                dgvTopRated.DataSource = topRated.Select(r => new
+                {
+                    Title = r.Content.Title,
+                    Type = r.Content.Type,
+                    Genre = r.Content.Genre,
+                    Rating = r.Score,
+                    RatingDate = r.RatingDate.ToShortDateString()
+                }).ToList();
+
+                // Auto-size columns
+                dgvTopRated.AutoResizeColumns();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading rating statistics: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }
+

@@ -1,8 +1,8 @@
 ﻿using NetWatchApp.Classes.Models;
 using NetWatchApp.Classes.Repositories;
-using NetWatchApp.Data.EntityFramework;
 using System;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -20,322 +20,337 @@ namespace NetWatchApp.Forms
             InitializeComponent();
             _content = content;
             _currentUser = currentUser;
-            _viewingHistoryRepository = new ViewingHistoryRepository(new NetWatchDbContext());
-            _ratingRepository = new RatingRepository(new NetWatchDbContext());
+            _viewingHistoryRepository = new ViewingHistoryRepository(new Data.EntityFramework.NetWatchDbContext());
+            _ratingRepository = new RatingRepository(new Data.EntityFramework.NetWatchDbContext());
 
+            // Load content details
             LoadContentDetails();
+
+            // Set up event handlers
+            btnMarkAsWatched.Click += BtnMarkAsWatched_Click;
+            btnRate.Click += BtnRate_Click;
+            btnClose.Click += BtnClose_Click;
         }
 
         private void InitializeComponent()
         {
-            this.pnlHeader = new System.Windows.Forms.Panel();
             this.lblTitle = new System.Windows.Forms.Label();
-            this.lblReleaseYear = new System.Windows.Forms.Label();
-            this.pnlImage = new System.Windows.Forms.Panel();
-            this.pnlDetails = new System.Windows.Forms.Panel();
+            this.lblDescription = new System.Windows.Forms.Label();
+            this.txtDescription = new System.Windows.Forms.TextBox();
             this.lblGenre = new System.Windows.Forms.Label();
+            this.lblReleaseYear = new System.Windows.Forms.Label();
             this.lblPlatform = new System.Windows.Forms.Label();
             this.lblDuration = new System.Windows.Forms.Label();
-            this.lblDescription = new System.Windows.Forms.Label();
-            this.btnWatch = new System.Windows.Forms.Button();
-            this.btnRate = new System.Windows.Forms.Button();
+            this.lblRating = new System.Windows.Forms.Label();
+            this.picContentImage = new System.Windows.Forms.PictureBox();
             this.pnlEpisodes = new System.Windows.Forms.Panel();
             this.lblEpisodes = new System.Windows.Forms.Label();
-            this.flpEpisodes = new System.Windows.Forms.FlowLayoutPanel();
-            this.pnlHeader.SuspendLayout();
-            this.pnlDetails.SuspendLayout();
-            this.pnlEpisodes.SuspendLayout();
-            this.SuspendLayout();
-
-            // pnlHeader
-            this.pnlHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
-            this.pnlHeader.Controls.Add(this.lblTitle);
-            this.pnlHeader.Controls.Add(this.lblReleaseYear);
-            this.pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlHeader.Location = new System.Drawing.Point(0, 0);
-            this.pnlHeader.Name = "pnlHeader";
-            this.pnlHeader.Size = new System.Drawing.Size(800, 60);
-            this.pnlHeader.TabIndex = 0;
+            this.dgvEpisodes = new System.Windows.Forms.DataGridView();
+            this.colEpisodeNumber = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colEpisodeTitle = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colEpisodeDuration = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colWatched = new System.Windows.Forms.DataGridViewCheckBoxColumn();
+            this.btnMarkAsWatched = new System.Windows.Forms.Button();
+            this.btnRate = new System.Windows.Forms.Button();
+            this.btnClose = new System.Windows.Forms.Button();
 
             // lblTitle
             this.lblTitle.AutoSize = true;
-            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.lblTitle.ForeColor = System.Drawing.Color.White;
-            this.lblTitle.Location = new System.Drawing.Point(20, 15);
+            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold);
+            this.lblTitle.Location = new System.Drawing.Point(20, 20);
             this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(100, 30);
-            this.lblTitle.TabIndex = 0;
-            this.lblTitle.Text = "Title";
+            this.lblTitle.Size = new System.Drawing.Size(200, 37);
+            this.lblTitle.Text = "Content Title";
 
-            // lblReleaseYear
-            this.lblReleaseYear.AutoSize = true;
-            this.lblReleaseYear.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.lblReleaseYear.ForeColor = System.Drawing.Color.White;
-            this.lblReleaseYear.Location = new System.Drawing.Point(700, 20);
-            this.lblReleaseYear.Name = "lblReleaseYear";
-            this.lblReleaseYear.Size = new System.Drawing.Size(50, 21);
-            this.lblReleaseYear.TabIndex = 1;
-            this.lblReleaseYear.Text = "2023";
+            // lblDescription
+            this.lblDescription.AutoSize = true;
+            this.lblDescription.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblDescription.Location = new System.Drawing.Point(20, 70);
+            this.lblDescription.Name = "lblDescription";
+            this.lblDescription.Size = new System.Drawing.Size(85, 20);
+            this.lblDescription.Text = "Description:";
 
-            // pnlImage
-            this.pnlImage.BackColor = System.Drawing.Color.Gray;
-            this.pnlImage.Location = new System.Drawing.Point(20, 80);
-            this.pnlImage.Name = "pnlImage";
-            this.pnlImage.Size = new System.Drawing.Size(200, 300);
-            this.pnlImage.TabIndex = 1;
-
-            // pnlDetails
-            this.pnlDetails.Location = new System.Drawing.Point(240, 80);
-            this.pnlDetails.Name = "pnlDetails";
-            this.pnlDetails.Size = new System.Drawing.Size(540, 300);
-            this.pnlDetails.TabIndex = 2;
-            this.pnlDetails.Controls.Add(this.lblGenre);
-            this.pnlDetails.Controls.Add(this.lblPlatform);
-            this.pnlDetails.Controls.Add(this.lblDuration);
-            this.pnlDetails.Controls.Add(this.lblDescription);
-            this.pnlDetails.Controls.Add(this.btnWatch);
-            this.pnlDetails.Controls.Add(this.btnRate);
+            // txtDescription
+            this.txtDescription.BackColor = System.Drawing.SystemColors.Control;
+            this.txtDescription.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.txtDescription.Location = new System.Drawing.Point(20, 100);
+            this.txtDescription.Multiline = true;
+            this.txtDescription.Name = "txtDescription";
+            this.txtDescription.ReadOnly = true;
+            this.txtDescription.Size = new System.Drawing.Size(400, 100);
+            this.txtDescription.TabIndex = 0;
+            this.txtDescription.Text = "Content description goes here...";
 
             // lblGenre
             this.lblGenre.AutoSize = true;
-            this.lblGenre.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.lblGenre.Location = new System.Drawing.Point(0, 10);
+            this.lblGenre.Location = new System.Drawing.Point(20, 210);
             this.lblGenre.Name = "lblGenre";
-            this.lblGenre.Size = new System.Drawing.Size(50, 19);
-            this.lblGenre.TabIndex = 0;
+            this.lblGenre.Size = new System.Drawing.Size(100, 20);
             this.lblGenre.Text = "Genre: Action";
+
+            // lblReleaseYear
+            this.lblReleaseYear.AutoSize = true;
+            this.lblReleaseYear.Location = new System.Drawing.Point(20, 240);
+            this.lblReleaseYear.Name = "lblReleaseYear";
+            this.lblReleaseYear.Size = new System.Drawing.Size(120, 20);
+            this.lblReleaseYear.Text = "Release Year: 2023";
 
             // lblPlatform
             this.lblPlatform.AutoSize = true;
-            this.lblPlatform.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.lblPlatform.Location = new System.Drawing.Point(0, 40);
+            this.lblPlatform.Location = new System.Drawing.Point(20, 270);
             this.lblPlatform.Name = "lblPlatform";
-            this.lblPlatform.Size = new System.Drawing.Size(100, 19);
-            this.lblPlatform.TabIndex = 1;
+            this.lblPlatform.Size = new System.Drawing.Size(120, 20);
             this.lblPlatform.Text = "Platform: Netflix";
 
             // lblDuration
             this.lblDuration.AutoSize = true;
-            this.lblDuration.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.lblDuration.Location = new System.Drawing.Point(0, 70);
+            this.lblDuration.Location = new System.Drawing.Point(20, 300);
             this.lblDuration.Name = "lblDuration";
-            this.lblDuration.Size = new System.Drawing.Size(100, 19);
-            this.lblDuration.TabIndex = 2;
+            this.lblDuration.Size = new System.Drawing.Size(120, 20);
             this.lblDuration.Text = "Duration: 120 min";
 
-            // lblDescription
-            this.lblDescription.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.lblDescription.Location = new System.Drawing.Point(0, 100);
-            this.lblDescription.Name = "lblDescription";
-            this.lblDescription.Size = new System.Drawing.Size(540, 100);
-            this.lblDescription.TabIndex = 3;
-            this.lblDescription.Text = "Description";
+            // lblRating
+            this.lblRating.AutoSize = true;
+            this.lblRating.Location = new System.Drawing.Point(20, 330);
+            this.lblRating.Name = "lblRating";
+            this.lblRating.Size = new System.Drawing.Size(120, 20);
+            this.lblRating.Text = "Rating: 4.5/5";
 
-            // btnWatch
-            this.btnWatch.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(122)))), ((int)(((byte)(204)))));
-            this.btnWatch.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnWatch.ForeColor = System.Drawing.Color.White;
-            this.btnWatch.Location = new System.Drawing.Point(0, 220);
-            this.btnWatch.Name = "btnWatch";
-            this.btnWatch.Size = new System.Drawing.Size(150, 40);
-            this.btnWatch.TabIndex = 4;
-            this.btnWatch.Text = "Watch Now";
-            this.btnWatch.UseVisualStyleBackColor = false;
-            this.btnWatch.Click += new System.EventHandler(this.btnWatch_Click);
-
-            // btnRate
-            this.btnRate.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(45)))));
-            this.btnRate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnRate.ForeColor = System.Drawing.Color.White;
-            this.btnRate.Location = new System.Drawing.Point(160, 220);
-            this.btnRate.Name = "btnRate";
-            this.btnRate.Size = new System.Drawing.Size(150, 40);
-            this.btnRate.TabIndex = 5;
-            this.btnRate.Text = "Rate";
-            this.btnRate.UseVisualStyleBackColor = false;
-            this.btnRate.Click += new System.EventHandler(this.btnRate_Click);
+            // picContentImage
+            this.picContentImage.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.picContentImage.Location = new System.Drawing.Point(450, 20);
+            this.picContentImage.Name = "picContentImage";
+            this.picContentImage.Size = new System.Drawing.Size(200, 300);
+            this.picContentImage.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.picContentImage.TabIndex = 0;
+            this.picContentImage.TabStop = false;
 
             // pnlEpisodes
-            this.pnlEpisodes.Location = new System.Drawing.Point(20, 400);
-            this.pnlEpisodes.Name = "pnlEpisodes";
-            this.pnlEpisodes.Size = new System.Drawing.Size(760, 250);
-            this.pnlEpisodes.TabIndex = 3;
+            this.pnlEpisodes.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlEpisodes.Controls.Add(this.lblEpisodes);
-            this.pnlEpisodes.Controls.Add(this.flpEpisodes);
+            this.pnlEpisodes.Controls.Add(this.dgvEpisodes);
+            this.pnlEpisodes.Location = new System.Drawing.Point(20, 370);
+            this.pnlEpisodes.Name = "pnlEpisodes";
+            this.pnlEpisodes.Size = new System.Drawing.Size(630, 200);
             this.pnlEpisodes.Visible = false;
 
             // lblEpisodes
             this.lblEpisodes.AutoSize = true;
-            this.lblEpisodes.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.lblEpisodes.Location = new System.Drawing.Point(0, 0);
+            this.lblEpisodes.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblEpisodes.Location = new System.Drawing.Point(10, 10);
             this.lblEpisodes.Name = "lblEpisodes";
-            this.lblEpisodes.Size = new System.Drawing.Size(80, 21);
-            this.lblEpisodes.TabIndex = 0;
-            this.lblEpisodes.Text = "Episodes";
+            this.lblEpisodes.Size = new System.Drawing.Size(70, 20);
+            this.lblEpisodes.Text = "Episodes:";
 
-            // flpEpisodes
-            this.flpEpisodes.AutoScroll = true;
-            this.flpEpisodes.Location = new System.Drawing.Point(0, 30);
-            this.flpEpisodes.Name = "flpEpisodes";
-            this.flpEpisodes.Size = new System.Drawing.Size(760, 220);
-            this.flpEpisodes.TabIndex = 1;
+            // dgvEpisodes
+            this.dgvEpisodes.AllowUserToAddRows = false;
+            this.dgvEpisodes.AllowUserToDeleteRows = false;
+            this.dgvEpisodes.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvEpisodes.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+                this.colEpisodeNumber,
+                this.colEpisodeTitle,
+                this.colEpisodeDuration,
+                this.colWatched
+            });
+            this.dgvEpisodes.Location = new System.Drawing.Point(10, 40);
+            this.dgvEpisodes.Name = "dgvEpisodes";
+            this.dgvEpisodes.ReadOnly = true;
+            this.dgvEpisodes.RowHeadersWidth = 51;
+            this.dgvEpisodes.Size = new System.Drawing.Size(610, 150);
+            this.dgvEpisodes.TabIndex = 0;
+
+            // colEpisodeNumber
+            this.colEpisodeNumber.HeaderText = "Number";
+            this.colEpisodeNumber.MinimumWidth = 6;
+            this.colEpisodeNumber.Name = "colEpisodeNumber";
+            this.colEpisodeNumber.ReadOnly = true;
+            this.colEpisodeNumber.Width = 70;
+
+            // colEpisodeTitle
+            this.colEpisodeTitle.HeaderText = "Title";
+            this.colEpisodeTitle.MinimumWidth = 6;
+            this.colEpisodeTitle.Name = "colEpisodeTitle";
+            this.colEpisodeTitle.ReadOnly = true;
+            this.colEpisodeTitle.Width = 250;
+
+            // colEpisodeDuration
+            this.colEpisodeDuration.HeaderText = "Duration";
+            this.colEpisodeDuration.MinimumWidth = 6;
+            this.colEpisodeDuration.Name = "colEpisodeDuration";
+            this.colEpisodeDuration.ReadOnly = true;
+            this.colEpisodeDuration.Width = 80;
+
+            // colWatched
+            this.colWatched.HeaderText = "Watched";
+            this.colWatched.MinimumWidth = 6;
+            this.colWatched.Name = "colWatched";
+            this.colWatched.ReadOnly = true;
+            this.colWatched.Width = 80;
+
+            // btnMarkAsWatched
+            this.btnMarkAsWatched.Location = new System.Drawing.Point(20, 590);
+            this.btnMarkAsWatched.Name = "btnMarkAsWatched";
+            this.btnMarkAsWatched.Size = new System.Drawing.Size(150, 35);
+            this.btnMarkAsWatched.Text = "Mark as Watched";
+            this.btnMarkAsWatched.UseVisualStyleBackColor = true;
+
+            // btnRate
+            this.btnRate.Location = new System.Drawing.Point(180, 590);
+            this.btnRate.Name = "btnRate";
+            this.btnRate.Size = new System.Drawing.Size(150, 35);
+            this.btnRate.Text = "Rate Content";
+            this.btnRate.UseVisualStyleBackColor = true;
+
+            // btnClose
+            this.btnClose.Location = new System.Drawing.Point(500, 590);
+            this.btnClose.Name = "btnClose";
+            this.btnClose.Size = new System.Drawing.Size(150, 35);
+            this.btnClose.Text = "Close";
+            this.btnClose.UseVisualStyleBackColor = true;
 
             // ContentDetailsForm
-            this.ClientSize = new System.Drawing.Size(800, 680);
-            this.Controls.Add(this.pnlHeader);
-            this.Controls.Add(this.pnlImage);
-            this.Controls.Add(this.pnlDetails);
+            this.ClientSize = new System.Drawing.Size(680, 650);
+            this.Controls.Add(this.lblTitle);
+            this.Controls.Add(this.lblDescription);
+            this.Controls.Add(this.txtDescription);
+            this.Controls.Add(this.lblGenre);
+            this.Controls.Add(this.lblReleaseYear);
+            this.Controls.Add(this.lblPlatform);
+            this.Controls.Add(this.lblDuration);
+            this.Controls.Add(this.lblRating);
+            this.Controls.Add(this.picContentImage);
             this.Controls.Add(this.pnlEpisodes);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.Controls.Add(this.btnMarkAsWatched);
+            this.Controls.Add(this.btnRate);
+            this.Controls.Add(this.btnClose);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
+            this.MinimizeBox = false;
             this.Name = "ContentDetailsForm";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Content Details";
-            this.pnlHeader.ResumeLayout(false);
-            this.pnlHeader.PerformLayout();
-            this.pnlDetails.ResumeLayout(false);
-            this.pnlDetails.PerformLayout();
-            this.pnlEpisodes.ResumeLayout(false);
-            this.pnlEpisodes.PerformLayout();
-            this.ResumeLayout(false);
         }
-
-        private System.Windows.Forms.Panel pnlHeader;
-        private System.Windows.Forms.Label lblTitle;
-        private System.Windows.Forms.Label lblReleaseYear;
-        private System.Windows.Forms.Panel pnlImage;
-        private System.Windows.Forms.Panel pnlDetails;
-        private System.Windows.Forms.Label lblGenre;
-        private System.Windows.Forms.Label lblPlatform;
-        private System.Windows.Forms.Label lblDuration;
-        private System.Windows.Forms.Label lblDescription;
-        private System.Windows.Forms.Button btnWatch;
-        private System.Windows.Forms.Button btnRate;
-        private System.Windows.Forms.Panel pnlEpisodes;
-        private System.Windows.Forms.Label lblEpisodes;
-        private System.Windows.Forms.FlowLayoutPanel flpEpisodes;
 
         private void LoadContentDetails()
         {
             // Set content details
             lblTitle.Text = _content.Title;
-            lblReleaseYear.Text = _content.ReleaseYear.ToString();
+            txtDescription.Text = _content.Description;
             lblGenre.Text = $"Genre: {_content.Genre}";
+            lblReleaseYear.Text = $"Release Year: {_content.ReleaseYear}";
             lblPlatform.Text = $"Platform: {_content.Platform}";
-            lblDuration.Text = $"Duration: {_content.DurationMinutes} min";
-            lblDescription.Text = _content.Description;
 
-            // Show episodes panel for series
-            if (_content.Type == ContentType.Series && _content.Episodes != null && _content.Episodes.Any())
+            // Set rating
+            lblRating.Text = $"Rating: {_content.AverageRating}/5 ({_content.Ratings.Count} ratings)";
+
+            // Set duration or episodes
+            if (_content.Type == "Movie")
             {
+                lblDuration.Text = $"Duration: {_content.Duration} min";
+                pnlEpisodes.Visible = false;
+                this.ClientSize = new Size(680, 450);
+                btnMarkAsWatched.Location = new Point(20, 390);
+                btnRate.Location = new Point(180, 390);
+                btnClose.Location = new Point(500, 390);
+            }
+            else
+            {
+                lblDuration.Text = $"Episodes: {_content.Episodes.Count}";
                 pnlEpisodes.Visible = true;
+                LoadEpisodes();
+            }
 
-                // Group episodes by season
-                var episodesBySeason = _content.Episodes
-                    .OrderBy(e => e.SeasonNumber)
-                    .ThenBy(e => e.EpisodeNumber)
-                    .GroupBy(e => e.SeasonNumber);
-
-                foreach (var season in episodesBySeason)
+            // Load image if available
+            if (!string.IsNullOrEmpty(_content.ImagePath))
+            {
+                string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _content.ImagePath);
+                if (File.Exists(fullPath))
                 {
-                    // Add season header
-                    Label lblSeason = new Label
-                    {
-                        Text = $"Season {season.Key}",
-                        Font = new Font("Segoe UI", 11, FontStyle.Bold),
-                        AutoSize = true,
-                        Margin = new Padding(0, 10, 0, 5),
-                        Width = 740
-                    };
-
-                    flpEpisodes.Controls.Add(lblSeason);
-
-                    // Add episodes
-                    foreach (var episode in season)
-                    {
-                        Panel pnlEpisode = new Panel
-                        {
-                            Width = 740,
-                            Height = 40,
-                            Margin = new Padding(0, 2, 0, 2),
-                            BorderStyle = BorderStyle.FixedSingle
-                        };
-
-                        Label lblEpisodeTitle = new Label
-                        {
-                            Text = $"Episode {episode.EpisodeNumber}: {episode.Title}",
-                            Location = new Point(10, 10),
-                            AutoSize = true
-                        };
-
-                        Button btnWatchEpisode = new Button
-                        {
-                            Text = "Watch",
-                            Size = new Size(80, 25),
-                            Location = new Point(650, 7),
-                            BackColor = Color.FromArgb(0, 122, 204),
-                            ForeColor = Color.White,
-                            FlatStyle = FlatStyle.Flat
-                        };
-
-                        btnWatchEpisode.Click += (sender, e) => WatchEpisode(episode);
-
-                        pnlEpisode.Controls.Add(lblEpisodeTitle);
-                        pnlEpisode.Controls.Add(btnWatchEpisode);
-
-                        flpEpisodes.Controls.Add(pnlEpisode);
-                    }
+                    picContentImage.Image = Image.FromFile(fullPath);
                 }
             }
         }
 
-        private async void btnWatch_Click(object sender, EventArgs e)
+        private void LoadEpisodes()
         {
-            if (_content.Type == ContentType.Movie)
+            dgvEpisodes.Rows.Clear();
+
+            // Get viewing history for this user and content
+            var viewingHistory = _viewingHistoryRepository.GetByUserAndContent(_currentUser.Id, _content.Id);
+
+            foreach (var episode in _content.Episodes.OrderBy(e => e.EpisodeNumber))
             {
-                // Create viewing history for movie
-                var viewingHistory = new ViewingHistory
+                bool watched = viewingHistory != null &&
+                               viewingHistory.WatchedEpisodes != null &&
+                               viewingHistory.WatchedEpisodes.Contains(episode.EpisodeNumber.ToString());
+
+                dgvEpisodes.Rows.Add(episode.EpisodeNumber, episode.Title, $"{episode.Duration} min", watched);
+            }
+        }
+
+        private void BtnMarkAsWatched_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_content.Type == "Movie")
                 {
-                    UserId = _currentUser.Id,
-                    ContentId = _content.Id,
-                    ViewDate = DateTime.Now,
-                    WatchedMinutes = _content.DurationMinutes,
-                    Completed = true
-                };
+                    // Mark movie as watched
+                    var viewingHistory = _viewingHistoryRepository.GetByUserAndContent(_currentUser.Id, _content.Id);
 
-                await _viewingHistoryRepository.AddAsync(viewingHistory);
+                    if (viewingHistory == null)
+                    {
+                        viewingHistory = new ViewingHistory
+                        {
+                            UserId = _currentUser.Id,
+                            ContentId = _content.Id,
+                            WatchDate = DateTime.Now,
+                            WatchedEpisodes = ""
+                        };
+                        _viewingHistoryRepository.Add(viewingHistory);
+                    }
+                    else
+                    {
+                        viewingHistory.WatchDate = DateTime.Now;
+                        _viewingHistoryRepository.Update(viewingHistory);
+                    }
 
-                MessageBox.Show("Enjoy your movie!", "Watch", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("Movie marked as watched!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    // Open episode selection form for series
+                    using (var episodeSelectionForm = new EpisodeSelectionForm(_content, _currentUser))
+                    {
+                        if (episodeSelectionForm.ShowDialog() == DialogResult.OK)
+                        {
+                            LoadEpisodes(); // Refresh episodes list
+                        }
+                    }
+                }
             }
-            else
+            catch (Exception ex)
             {
-                // For series, scroll to episodes section
-                pnlEpisodes.Focus();
+                MessageBox.Show($"Error marking content as watched: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private async void WatchEpisode(Episode episode)
+        private void BtnRate_Click(object sender, EventArgs e)
         {
-            // Create viewing history for episode
-            var viewingHistory = new ViewingHistory
+            using (var ratingForm = new RatingForm(_content, _currentUser))
             {
-                UserId = _currentUser.Id,
-                ContentId = _content.Id,
-                EpisodeId = episode.Id,
-                ViewDate = DateTime.Now,
-                WatchedMinutes = episode.DurationMinutes,
-                Completed = true
-            };
-
-            await _viewingHistoryRepository.AddAsync(viewingHistory);
-
-            MessageBox.Show($"Enjoy watching {_content.Title} - Season {episode.SeasonNumber}, Episode {episode.EpisodeNumber}!", "Watch", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (ratingForm.ShowDialog() == DialogResult.OK)
+                {
+                    // Refresh rating display
+                    lblRating.Text = $"Rating: {_content.AverageRating}/5 ({_content.Ratings.Count} ratings)";
+                }
+            }
         }
 
-        private void btnRate_Click(object sender, EventArgs e)
+        private void BtnClose_Click(object sender, EventArgs e)
         {
-            RatingForm ratingForm = new RatingForm(_content, _currentUser);
-            ratingForm.ShowDialog();
+            DialogResult = DialogResult.OK;
+            Close();
         }
     }
 }
+

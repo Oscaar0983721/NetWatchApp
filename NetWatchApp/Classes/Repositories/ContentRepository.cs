@@ -81,6 +81,7 @@ namespace NetWatchApp.Classes.Repositories
             existingContent.Type = content.Type;
             existingContent.Platform = content.Platform;
             existingContent.Duration = content.Duration;
+            existingContent.ImagePath = content.ImagePath;
 
             // Handle episodes
             if (content.Type == "Movie")

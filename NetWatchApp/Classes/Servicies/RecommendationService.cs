@@ -1,199 +1,149 @@
-﻿using Microsoft.EntityFrameworkCore;
-using NetWatchApp.Classes.Models;
-using NetWatchApp.Data.EntityFramework;
+﻿using NetWatchApp.Classes.Models;
+using NetWatchApp.Classes.Repositories;
 using NetWatchApp.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace NetWatchApp.Classes.Services
 {
     public class RecommendationService : IRecommendationService
     {
-        private readonly NetWatchDbContext _context;
+        private readonly ContentRepository _contentRepository;
+        private readonly ViewingHistoryRepository _viewingHistoryRepository;
+        private readonly RatingRepository _ratingRepository;
 
-        public RecommendationService(NetWatchDbContext context)
+        public RecommendationService(
+            ContentRepository contentRepository,
+            ViewingHistoryRepository viewingHistoryRepository,
+            RatingRepository ratingRepository)
         {
-            _context = context;
+            _contentRepository = contentRepository;
+            _viewingHistoryRepository = viewingHistoryRepository;
+            _ratingRepository = ratingRepository;
         }
 
-        public async Task<IEnumerable<Content>> GetRecommendationsForUserAsync(int userId, int count = 10)
+        public List<Content> GetRecommendedContent(int userId, int count = 5)
         {
+            var recommendations = new List<Content>();
+
             // Get user's viewing history
-            var userViewingHistory = await _context.ViewingHistories
-                .Where(vh => vh.UserId == userId)
-                .Include(vh => vh.Content)
-                .ToListAsync();
+            var viewingHistory = _viewingHistoryRepository.GetByUser(userId);
 
             // Get user's ratings
-            var userRatings = await _context.Ratings
-                .Where(r => r.UserId == userId)
-                .Include(r => r.Content)
-                .ToListAsync();
+            var ratings = _ratingRepository.GetByUser(userId);
 
             // Get all content
-            var allContent = await _context.Contents
-                .Include(c => c.Episodes)
-                .ToListAsync();
+            var allContent = _contentRepository.GetAll();
 
-            // Get content IDs that the user has already watched
-            var watchedContentIds = userViewingHistory.Select(vh => vh.ContentId).Distinct().ToList();
-
-            // Get content that the user hasn't watched yet
+            // Filter out content the user has already watched
+            var watchedContentIds = viewingHistory.Select(vh => vh.ContentId).ToList();
             var unwatchedContent = allContent.Where(c => !watchedContentIds.Contains(c.Id)).ToList();
 
-            // If user has no history, return popular content
-            if (!userViewingHistory.Any())
+            // If user has no viewing history, return top-rated content
+            if (viewingHistory.Count == 0)
             {
-                return await GetPopularContentAsync(count);
+                return GetTopRatedContent(count);
             }
 
             // Get user's preferred genres based on viewing history and ratings
-            var genreScores = new Dictionary<string, double>();
+            var preferredGenres = GetPreferredGenres(userId);
 
-            // Add scores from viewing history
-            foreach (var vh in userViewingHistory)
+            // Get content matching preferred genres
+            var genreBasedRecommendations = unwatchedContent
+                .Where(c => preferredGenres.Contains(c.Genre))
+                .OrderByDescending(c => c.AverageRating)
+                .Take(count)
+                .ToList();
+
+            recommendations.AddRange(genreBasedRecommendations);
+
+            // If we don't have enough recommendations, add some top-rated content
+            if (recommendations.Count < count)
             {
-                string genre = vh.Content.Genre;
-                if (!string.IsNullOrEmpty(genre))
-                {
-                    if (!genreScores.ContainsKey(genre))
-                        genreScores[genre] = 0;
+                var remainingCount = count - recommendations.Count;
+                var topRatedContent = GetTopRatedContent(remainingCount * 2); // Get more than needed to filter
 
-                    genreScores[genre] += 1;
-                }
+                // Filter out content already in recommendations
+                var recommendedIds = recommendations.Select(c => c.Id).ToList();
+                topRatedContent = topRatedContent
+                    .Where(c => !recommendedIds.Contains(c.Id) && !watchedContentIds.Contains(c.Id))
+                    .Take(remainingCount)
+                    .ToList();
+
+                recommendations.AddRange(topRatedContent);
             }
 
-            // Add scores from ratings (higher weight for highly rated content)
-            foreach (var rating in userRatings)
-            {
-                string genre = rating.Content.Genre;
-                if (!string.IsNullOrEmpty(genre))
-                {
-                    if (!genreScores.ContainsKey(genre))
-                        genreScores[genre] = 0;
+            return recommendations.Take(count).ToList();
+        }
 
-                    genreScores[genre] += rating.Score * 0.5; // Weight ratings by score
-                }
-            }
-
-            // Calculate a score for each unwatched content based on genre preference
-            var contentScores = new Dictionary<Content, double>();
-
-            foreach (var content in unwatchedContent)
-            {
-                double score = 0;
-
-                // Add score based on genre preference
-                if (!string.IsNullOrEmpty(content.Genre) && genreScores.ContainsKey(content.Genre))
-                {
-                    score += genreScores[content.Genre];
-                }
-
-                // Add score based on release year (newer content gets higher score)
-                score += (content.ReleaseYear - 2000) * 0.1;
-
-                // Add score based on average rating
-                var avgRating = await _context.Ratings
-                    .Where(r => r.ContentId == content.Id)
-                    .Select(r => (double)r.Score)
-                    .DefaultIfEmpty(0)
-                    .AverageAsync();
-
-                score += avgRating * 2;
-
-                contentScores[content] = score;
-            }
-
-            // Sort content by score and return top recommendations
-            return contentScores
-                .OrderByDescending(cs => cs.Value)
-                .Select(cs => cs.Key)
+        public List<Content> GetTopRatedContent(int count = 5)
+        {
+            return _contentRepository.GetAll()
+                .OrderByDescending(c => c.AverageRating)
                 .Take(count)
                 .ToList();
         }
 
-        public async Task<IEnumerable<Content>> GetSimilarContentAsync(int contentId, int count = 5)
+        public List<Content> GetSimilarContent(int contentId, int count = 5)
         {
-            // Get the target content
-            var targetContent = await _context.Contents
-                .FindAsync(contentId);
-
-            if (targetContent == null)
+            var content = _contentRepository.GetById(contentId);
+            if (content == null)
+            {
                 return new List<Content>();
-
-            // Get all content except the target
-            var allOtherContent = await _context.Contents
-                .Where(c => c.Id != contentId)
-                .ToListAsync();
-
-            // Calculate similarity scores
-            var similarityScores = new Dictionary<Content, double>();
-
-            foreach (var content in allOtherContent)
-            {
-                double score = 0;
-
-                // Same genre
-                if (content.Genre == targetContent.Genre)
-                    score += 3;
-
-                // Same type (movie/series)
-                if (content.Type == targetContent.Type)
-                    score += 1;
-
-                // Similar release year
-                int yearDifference = Math.Abs(content.ReleaseYear - targetContent.ReleaseYear);
-                if (yearDifference <= 5)
-                    score += (5 - yearDifference) * 0.2;
-
-                // Same platform
-                if (content.Platform == targetContent.Platform)
-                    score += 1;
-
-                similarityScores[content] = score;
             }
 
-            // Return the most similar content
-            return similarityScores
-                .OrderByDescending(ss => ss.Value)
-                .Select(ss => ss.Key)
+            // Get content with the same genre
+            return _contentRepository.GetAll()
+                .Where(c => c.Id != contentId && c.Genre == content.Genre)
+                .OrderByDescending(c => c.AverageRating)
                 .Take(count)
                 .ToList();
         }
 
-        public async Task<IEnumerable<Content>> GetPopularContentAsync(int count = 10)
+        private List<string> GetPreferredGenres(int userId)
         {
-            // Get all content with their view counts and average ratings
-            var contentWithStats = await _context.Contents
-                .Select(c => new
-                {
-                    Content = c,
-                    ViewCount = _context.ViewingHistories.Count(vh => vh.ContentId == c.Id),
-                    AvgRating = _context.Ratings
-                        .Where(r => r.ContentId == c.Id)
-                        .Select(r => (double)r.Score)
-                        .DefaultIfEmpty(0)
-                        .Average()
-                })
-                .ToListAsync();
+            var viewingHistory = _viewingHistoryRepository.GetByUser(userId);
+            var ratings = _ratingRepository.GetByUser(userId);
 
-            // Calculate a popularity score based on views and ratings
-            var popularityScores = new Dictionary<Content, double>();
+            // Get content IDs from viewing history
+            var watchedContentIds = viewingHistory.Select(vh => vh.ContentId).ToList();
 
-            foreach (var item in contentWithStats)
+            // Get content IDs from highly rated content (4-5 stars)
+            var highlyRatedContentIds = ratings
+                .Where(r => r.Score >= 4)
+                .Select(r => r.ContentId)
+                .ToList();
+
+            // Combine both lists
+            var relevantContentIds = watchedContentIds.Union(highlyRatedContentIds).ToList();
+
+            // Get content objects
+            var relevantContent = _contentRepository.GetAll()
+                .Where(c => relevantContentIds.Contains(c.Id))
+                .ToList();
+
+            // Count genres
+            var genreCounts = new Dictionary<string, int>();
+            foreach (var content in relevantContent)
             {
-                double score = item.ViewCount * 0.7 + item.AvgRating * 3;
-                popularityScores[item.Content] = score;
+                if (genreCounts.ContainsKey(content.Genre))
+                {
+                    genreCounts[content.Genre]++;
+                }
+                else
+                {
+                    genreCounts[content.Genre] = 1;
+                }
             }
 
-            // Return the most popular content
-            return popularityScores
-                .OrderByDescending(ps => ps.Value)
-                .Select(ps => ps.Key)
-                .Take(count)
+            // Return top 3 genres
+            return genreCounts
+                .OrderByDescending(kv => kv.Value)
+                .Take(3)
+                .Select(kv => kv.Key)
                 .ToList();
         }
     }
 }
+

@@ -9,17 +9,14 @@ namespace NetWatchApp.Classes.Models
         public int Id { get; set; }
 
         [Required]
-        [StringLength(100)]
-        public string Title { get; set; }
-
-        public int SeasonNumber { get; set; }
-
         public int EpisodeNumber { get; set; }
 
-        public int DurationMinutes { get; set; }
+        [Required]
+        [MaxLength(100)]
+        public string Title { get; set; }
 
-        [StringLength(500)]
-        public string Description { get; set; }
+        [Required]
+        public int Duration { get; set; } // In minutes
 
         // Foreign key
         public int ContentId { get; set; }
@@ -29,3 +26,4 @@ namespace NetWatchApp.Classes.Models
         public virtual Content Content { get; set; }
     }
 }
+

@@ -9,11 +9,14 @@ namespace NetWatchApp.Classes.Models
         [Key]
         public int Id { get; set; }
 
+        [Required]
+        [Range(1, 5)]
         public int Score { get; set; }
 
-        [StringLength(500)]
+        [MaxLength(500)]
         public string Comment { get; set; }
 
+        [Required]
         public DateTime RatingDate { get; set; }
 
         // Foreign keys
@@ -28,3 +31,4 @@ namespace NetWatchApp.Classes.Models
         public virtual Content Content { get; set; }
     }
 }
+
