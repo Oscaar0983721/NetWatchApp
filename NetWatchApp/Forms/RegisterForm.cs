@@ -8,6 +8,21 @@ namespace NetWatchApp.Forms
 {
     public partial class RegisterForm : Form
     {
+        private System.Windows.Forms.Label lblTitle;
+        private System.Windows.Forms.Label lblIdentificationNumber;
+        private System.Windows.Forms.TextBox txtIdentificationNumber;
+        private System.Windows.Forms.Label lblFirstName;
+        private System.Windows.Forms.TextBox txtFirstName;
+        private System.Windows.Forms.Label lblLastName;
+        private System.Windows.Forms.TextBox txtLastName;
+        private System.Windows.Forms.Label lblEmail;
+        private System.Windows.Forms.TextBox txtEmail;
+        private System.Windows.Forms.Label lblPassword;
+        private System.Windows.Forms.TextBox txtPassword;
+        private System.Windows.Forms.Label lblConfirmPassword;
+        private System.Windows.Forms.TextBox txtConfirmPassword;
+        private System.Windows.Forms.Button btnRegister;
+        private System.Windows.Forms.Button btnCancel;
         private readonly UserRepository _userRepository;
 
         public RegisterForm()
@@ -249,3 +264,4 @@ namespace NetWatchApp.Forms
         }
     }
 }
+

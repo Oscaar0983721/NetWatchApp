@@ -10,6 +10,33 @@ namespace NetWatchApp.Forms
 {
     public partial class AddContentForm : Form
     {
+        private System.Windows.Forms.Label lblTitle;
+        private System.Windows.Forms.TextBox txtTitle;
+        private System.Windows.Forms.Label lblDescription;
+        private System.Windows.Forms.TextBox txtDescription;
+        private System.Windows.Forms.Label lblReleaseYear;
+        private System.Windows.Forms.NumericUpDown numReleaseYear;
+        private System.Windows.Forms.Label lblGenre;
+        private System.Windows.Forms.ComboBox cmbGenre;
+        private System.Windows.Forms.Label lblType;
+        private System.Windows.Forms.ComboBox cmbType;
+        private System.Windows.Forms.Label lblPlatform;
+        private System.Windows.Forms.ComboBox cmbPlatform;
+        private System.Windows.Forms.Label lblDuration;
+        private System.Windows.Forms.NumericUpDown numDuration;
+        private System.Windows.Forms.Panel pnlEpisodes;
+        private System.Windows.Forms.Label lblEpisodes;
+        private System.Windows.Forms.DataGridView dgvEpisodes;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colEpisodeNumber;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colEpisodeTitle;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colEpisodeDuration;
+        private System.Windows.Forms.Button btnAddEpisode;
+        private System.Windows.Forms.Button btnSave;
+        private System.Windows.Forms.Button btnCancel;
+        private System.Windows.Forms.Label lblImage;
+        private System.Windows.Forms.PictureBox picContentImage;
+        private System.Windows.Forms.Button btnSelectImage;
+        private System.Windows.Forms.Label lblImagePath;
         private readonly ContentRepository _contentRepository;
         private List<Episode> _episodes = new List<Episode>();
         private string _selectedImagePath = null;
@@ -411,9 +438,22 @@ namespace NetWatchApp.Forms
                         Type = cmbType.SelectedItem.ToString(),
                         Platform = cmbPlatform.SelectedItem.ToString(),
                         Duration = cmbType.SelectedItem.ToString() == "Movie" ? (int)numDuration.Value : 0,
-                        Episodes = cmbType.SelectedItem.ToString() == "Series" ? _episodes : new List<Episode>(),
                         ImagePath = imagePath
                     };
+
+                    // Agregar episodios después de crear el contenido
+                    if (cmbType.SelectedItem.ToString() == "Series" && _episodes.Count > 0)
+                    {
+                        foreach (var episode in _episodes)
+                        {
+                            content.Episodes.Add(new Episode
+                            {
+                                EpisodeNumber = episode.EpisodeNumber,
+                                Title = episode.Title,
+                                Duration = episode.Duration
+                            });
+                        }
+                    }
 
                     _contentRepository.Add(content);
                     MessageBox.Show("Content added successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);

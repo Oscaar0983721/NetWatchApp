@@ -11,6 +11,22 @@ namespace NetWatchApp.Forms
 {
     public partial class StatisticsForm : Form
     {
+        private System.Windows.Forms.Label lblTitle;
+        private System.Windows.Forms.TabControl tabControl;
+        private System.Windows.Forms.TabPage tabWatching;
+        private System.Windows.Forms.TabPage tabGenres;
+        private System.Windows.Forms.TabPage tabRatings;
+        private System.Windows.Forms.Label lblTotalWatched;
+        private System.Windows.Forms.Label lblTotalWatchTime;
+        private System.Windows.Forms.Label lblRecentlyWatched;
+        private System.Windows.Forms.DataGridView dgvRecentlyWatched;
+        private System.Windows.Forms.Label lblFavoriteGenres;
+        private System.Windows.Forms.Panel pnlGenreChart;
+        private System.Windows.Forms.Label lblRatingDistribution;
+        private System.Windows.Forms.Panel pnlRatingChart;
+        private System.Windows.Forms.Label lblTopRated;
+        private System.Windows.Forms.DataGridView dgvTopRated;
+        private System.Windows.Forms.Button btnClose;
         private readonly User _currentUser;
         private readonly ContentRepository _contentRepository;
         private readonly ViewingHistoryRepository _viewingHistoryRepository;
@@ -348,7 +364,7 @@ namespace NetWatchApp.Forms
                 pnlRatingChart.Paint += (sender, e) =>
                 {
                     Graphics g = e.Graphics;
-                    int maxCount = ratingCounts.Max();
+                    int maxCount = ratingCounts.Length > 0 ? ratingCounts.Max() : 0;
                     int barWidth = 50;
                     int spacing = 20;
                     int maxBarHeight = pnlRatingChart.Height - 50;

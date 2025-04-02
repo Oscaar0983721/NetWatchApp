@@ -64,14 +64,17 @@ namespace NetWatchApp.Classes.Services
                 var remainingCount = count - recommendations.Count;
                 var topRatedContent = GetTopRatedContent(remainingCount * 2); // Get more than needed to filter
 
-                // Filter out content already in recommendations
-                var recommendedIds = recommendations.Select(c => c.Id).ToList();
-                topRatedContent = topRatedContent
-                    .Where(c => !recommendedIds.Contains(c.Id) && !watchedContentIds.Contains(c.Id))
-                    .Take(remainingCount)
-                    .ToList();
+                if (topRatedContent.Any())
+                {
+                    // Filter out content already in recommendations
+                    var recommendedIds = recommendations.Select(c => c.Id).ToList();
+                    topRatedContent = topRatedContent
+                        .Where(c => !recommendedIds.Contains(c.Id) && !watchedContentIds.Contains(c.Id))
+                        .Take(remainingCount)
+                        .ToList();
 
-                recommendations.AddRange(topRatedContent);
+                    recommendations.AddRange(topRatedContent);
+                }
             }
 
             return recommendations.Take(count).ToList();

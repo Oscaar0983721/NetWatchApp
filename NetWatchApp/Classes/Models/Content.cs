@@ -62,7 +62,8 @@ namespace NetWatchApp.Classes.Models
                 double sum = 0;
                 foreach (var rating in Ratings)
                 {
-                    sum += rating.Score;
+                    if (rating != null)
+                        sum += rating.Score;
                 }
                 return Math.Round(sum / Ratings.Count, 1);
             }

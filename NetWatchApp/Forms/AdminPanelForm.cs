@@ -10,6 +10,24 @@ namespace NetWatchApp.Forms
 {
     public partial class AdminPanelForm : Form
     {
+        private System.Windows.Forms.TabControl tabControl;
+        private System.Windows.Forms.TabPage tabContentManagement;
+        private System.Windows.Forms.TabPage tabUserManagement;
+        private System.Windows.Forms.Panel pnlContentControls;
+        private System.Windows.Forms.Label lblContentSearch;
+        private System.Windows.Forms.TextBox txtContentSearch;
+        private System.Windows.Forms.Button btnAddContent;
+        private System.Windows.Forms.Button btnEditContent;
+        private System.Windows.Forms.Button btnDeleteContent;
+        private System.Windows.Forms.Button btnRefreshContent;
+        private System.Windows.Forms.DataGridView dgvContent;
+        private System.Windows.Forms.Panel pnlUserControls;
+        private System.Windows.Forms.Label lblUserSearch;
+        private System.Windows.Forms.TextBox txtUserSearch;
+        private System.Windows.Forms.Button btnEditUser;
+        private System.Windows.Forms.Button btnDeleteUser;
+        private System.Windows.Forms.Button btnRefreshUsers;
+        private System.Windows.Forms.DataGridView dgvUsers;
         private readonly ContentRepository _contentRepository;
         private readonly UserRepository _userRepository;
         private User _currentUser;

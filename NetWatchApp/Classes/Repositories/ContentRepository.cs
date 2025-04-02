@@ -124,7 +124,8 @@ namespace NetWatchApp.Classes.Repositories
                         {
                             EpisodeNumber = episode.EpisodeNumber,
                             Title = episode.Title,
-                            Duration = episode.Duration
+                            Duration = episode.Duration,
+                            ContentId = existingContent.Id
                         });
                     }
                 }

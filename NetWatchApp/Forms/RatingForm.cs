@@ -2,12 +2,23 @@
 using NetWatchApp.Classes.Repositories;
 using System;
 using System.Windows.Forms;
-using System.Xml.Linq;
 
 namespace NetWatchApp.Forms
 {
     public partial class RatingForm : Form
     {
+        private System.Windows.Forms.Label lblContentTitle;
+        private System.Windows.Forms.Label lblRating;
+        private System.Windows.Forms.Panel ratingPanel;
+        private System.Windows.Forms.RadioButton radioButton1;
+        private System.Windows.Forms.RadioButton radioButton2;
+        private System.Windows.Forms.RadioButton radioButton3;
+        private System.Windows.Forms.RadioButton radioButton4;
+        private System.Windows.Forms.RadioButton radioButton5;
+        private System.Windows.Forms.Label lblComment;
+        private System.Windows.Forms.TextBox txtComment;
+        private System.Windows.Forms.Button btnSubmit;
+        private System.Windows.Forms.Button btnCancel;
         private readonly Content _content;
         private readonly User _currentUser;
         private readonly RatingRepository _ratingRepository;

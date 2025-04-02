@@ -10,6 +10,25 @@ namespace NetWatchApp.Forms
 {
     public partial class ContentDetailsForm : Form
     {
+        private System.Windows.Forms.Label lblTitle;
+        private System.Windows.Forms.Label lblDescription;
+        private System.Windows.Forms.TextBox txtDescription;
+        private System.Windows.Forms.Label lblGenre;
+        private System.Windows.Forms.Label lblReleaseYear;
+        private System.Windows.Forms.Label lblPlatform;
+        private System.Windows.Forms.Label lblDuration;
+        private System.Windows.Forms.Label lblRating;
+        private System.Windows.Forms.PictureBox picContentImage;
+        private System.Windows.Forms.Panel pnlEpisodes;
+        private System.Windows.Forms.Label lblEpisodes;
+        private System.Windows.Forms.DataGridView dgvEpisodes;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colEpisodeNumber;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colEpisodeTitle;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colEpisodeDuration;
+        private System.Windows.Forms.DataGridViewCheckBoxColumn colWatched;
+        private System.Windows.Forms.Button btnMarkAsWatched;
+        private System.Windows.Forms.Button btnRate;
+        private System.Windows.Forms.Button btnClose;
         private readonly Content _content;
         private readonly User _currentUser;
         private readonly ViewingHistoryRepository _viewingHistoryRepository;
@@ -241,7 +260,14 @@ namespace NetWatchApp.Forms
             lblPlatform.Text = $"Platform: {_content.Platform}";
 
             // Set rating
-            lblRating.Text = $"Rating: {_content.AverageRating}/5 ({_content.Ratings.Count} ratings)";
+            if (_content.Ratings != null)
+            {
+                lblRating.Text = $"Rating: {_content.AverageRating}/5 ({_content.Ratings.Count} ratings)";
+            }
+            else
+            {
+                lblRating.Text = "Rating: No ratings yet";
+            }
 
             // Set duration or episodes
             if (_content.Type == "Movie")

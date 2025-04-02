@@ -6,6 +6,14 @@ namespace NetWatchApp.Forms
 {
     public partial class AddEpisodeForm : Form
     {
+        private System.Windows.Forms.Label lblEpisodeNumber;
+        private System.Windows.Forms.NumericUpDown numEpisodeNumber;
+        private System.Windows.Forms.Label lblTitle;
+        private System.Windows.Forms.TextBox txtTitle;
+        private System.Windows.Forms.Label lblDuration;
+        private System.Windows.Forms.NumericUpDown numDuration;
+        private System.Windows.Forms.Button btnSave;
+        private System.Windows.Forms.Button btnCancel;
         public Episode Episode { get; private set; }
         private int _episodeNumber;
 

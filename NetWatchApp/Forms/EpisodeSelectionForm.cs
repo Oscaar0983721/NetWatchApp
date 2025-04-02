@@ -9,6 +9,12 @@ namespace NetWatchApp.Forms
 {
     public partial class EpisodeSelectionForm : Form
     {
+        private System.Windows.Forms.Label lblTitle;
+        private System.Windows.Forms.CheckedListBox clbEpisodes;
+        private System.Windows.Forms.Button btnSelectAll;
+        private System.Windows.Forms.Button btnUnselectAll;
+        private System.Windows.Forms.Button btnSave;
+        private System.Windows.Forms.Button btnCancel;
         private readonly Content _content;
         private readonly User _currentUser;
         private readonly ViewingHistoryRepository _viewingHistoryRepository;
@@ -107,13 +113,22 @@ namespace NetWatchApp.Forms
 
             if (viewingHistory != null && !string.IsNullOrEmpty(viewingHistory.WatchedEpisodes))
             {
-                watchedEpisodes = viewingHistory.WatchedEpisodes
-                    .Split(',')
-                    .Where(s => !string.IsNullOrEmpty(s))
-                    .Select(int.Parse)
-                    .ToList();
+                try
+                {
+                    watchedEpisodes = viewingHistory.WatchedEpisodes
+                        .Split(',')
+                        .Where(s => !string.IsNullOrEmpty(s))
+                        .Select(int.Parse)
+                        .ToList();
 
-                _selectedEpisodes = new List<int>(watchedEpisodes);
+                    _selectedEpisodes = new List<int>(watchedEpisodes);
+                }
+                catch (FormatException)
+                {
+                    // En caso de que haya un formato incorrecto en la cadena de episodios
+                    watchedEpisodes = new List<int>();
+                    _selectedEpisodes = new List<int>();
+                }
             }
 
             // Populate checklist with episodes

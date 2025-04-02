@@ -11,6 +11,35 @@ namespace NetWatchApp.Forms
 {
     public partial class EditContentForm : Form
     {
+        private System.Windows.Forms.Label lblTitle;
+        private System.Windows.Forms.TextBox txtTitle;
+        private System.Windows.Forms.Label lblDescription;
+        private System.Windows.Forms.TextBox txtDescription;
+        private System.Windows.Forms.Label lblReleaseYear;
+        private System.Windows.Forms.NumericUpDown numReleaseYear;
+        private System.Windows.Forms.Label lblGenre;
+        private System.Windows.Forms.ComboBox cmbGenre;
+        private System.Windows.Forms.Label lblType;
+        private System.Windows.Forms.ComboBox cmbType;
+        private System.Windows.Forms.Label lblPlatform;
+        private System.Windows.Forms.ComboBox cmbPlatform;
+        private System.Windows.Forms.Label lblDuration;
+        private System.Windows.Forms.NumericUpDown numDuration;
+        private System.Windows.Forms.Label lblImage;
+        private System.Windows.Forms.PictureBox picContentImage;
+        private System.Windows.Forms.Button btnSelectImage;
+        private System.Windows.Forms.Label lblImagePath;
+        private System.Windows.Forms.Panel pnlEpisodes;
+        private System.Windows.Forms.Label lblEpisodes;
+        private System.Windows.Forms.DataGridView dgvEpisodes;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colEpisodeNumber;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colEpisodeTitle;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colEpisodeDuration;
+        private System.Windows.Forms.Button btnAddEpisode;
+        private System.Windows.Forms.Button btnEditEpisode;
+        private System.Windows.Forms.Button btnDeleteEpisode;
+        private System.Windows.Forms.Button btnSave;
+        private System.Windows.Forms.Button btnCancel;
         private readonly ContentRepository _contentRepository;
         private List<Episode> _episodes = new List<Episode>();
         private Content _content;
@@ -603,6 +632,8 @@ namespace NetWatchApp.Forms
                         _content.Episodes.Clear();
                         foreach (var episode in _episodes)
                         {
+                            // Asegurarse de que el episodio tenga el ContentId correcto
+                            episode.ContentId = _content.Id;
                             _content.Episodes.Add(episode);
                         }
                     }

@@ -8,6 +8,18 @@ namespace NetWatchApp.Forms
 {
     public partial class SettingsForm : Form
     {
+        private System.Windows.Forms.Label lblTitle;
+        private System.Windows.Forms.Label lblIdentificationNumber;
+        private System.Windows.Forms.TextBox txtIdentificationNumber;
+        private System.Windows.Forms.Label lblFirstName;
+        private System.Windows.Forms.TextBox txtFirstName;
+        private System.Windows.Forms.Label lblLastName;
+        private System.Windows.Forms.TextBox txtLastName;
+        private System.Windows.Forms.Label lblEmail;
+        private System.Windows.Forms.TextBox txtEmail;
+        private System.Windows.Forms.Button btnChangePassword;
+        private System.Windows.Forms.Button btnSave;
+        private System.Windows.Forms.Button btnCancel;
         private readonly User _currentUser;
         private readonly UserRepository _userRepository;
 
@@ -221,6 +233,15 @@ namespace NetWatchApp.Forms
 
     public partial class ChangePasswordForm : Form
     {
+        private System.Windows.Forms.Label lblTitle;
+        private System.Windows.Forms.Label lblCurrentPassword;
+        private System.Windows.Forms.TextBox txtCurrentPassword;
+        private System.Windows.Forms.Label lblNewPassword;
+        private System.Windows.Forms.TextBox txtNewPassword;
+        private System.Windows.Forms.Label lblConfirmPassword;
+        private System.Windows.Forms.TextBox txtConfirmPassword;
+        private System.Windows.Forms.Button btnSave;
+        private System.Windows.Forms.Button btnCancel;
         private readonly User _currentUser;
         private readonly UserRepository _userRepository;
 
@@ -392,3 +413,4 @@ namespace NetWatchApp.Forms
         }
     }
 }
+

@@ -9,6 +9,14 @@ namespace NetWatchApp.Forms
 {
     public partial class LoginForm : Form
     {
+        private System.Windows.Forms.Label lblTitle;
+        private System.Windows.Forms.Label lblEmail;
+        private System.Windows.Forms.TextBox txtEmail;
+        private System.Windows.Forms.Label lblPassword;
+        private System.Windows.Forms.TextBox txtPassword;
+        private System.Windows.Forms.Button btnLogin;
+        private System.Windows.Forms.Button btnRegister;
+        private System.Windows.Forms.LinkLabel lnkForgotPassword;
         private readonly UserRepository _userRepository;
 
         public LoginForm()
@@ -126,15 +134,24 @@ namespace NetWatchApp.Forms
                     // Login successful
                     this.Hide();
 
-                    // Open main form
-                    using (var mainForm = new MainForm(user))
+                    try
                     {
-                        mainForm.ShowDialog();
+                        // Open main form
+                        using (var mainForm = new MainForm(user))
+                        {
+                            mainForm.ShowDialog();
+                        }
                     }
-
-                    // Show login form again when main form is closed
-                    this.Show();
-                    txtPassword.Clear();
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error opening main form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    finally
+                    {
+                        // Show login form again when main form is closed
+                        this.Show();
+                        txtPassword.Clear();
+                    }
                 }
                 else
                 {
@@ -162,3 +179,4 @@ namespace NetWatchApp.Forms
         }
     }
 }
+
