@@ -8,18 +8,15 @@ namespace NetWatchApp.Classes.Models
         [Key]
         public int Id { get; set; }
 
-        [Required]
+        public int ContentId { get; set; }
+
         public int EpisodeNumber { get; set; }
 
         [Required]
-        [MaxLength(100)]
+        [StringLength(100)]
         public string Title { get; set; }
 
-        [Required]
         public int Duration { get; set; } // In minutes
-
-        // Foreign key
-        public int ContentId { get; set; }
 
         // Navigation property
         [ForeignKey("ContentId")]

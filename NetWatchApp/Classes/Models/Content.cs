@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
 
 namespace NetWatchApp.Classes.Models
 {
@@ -18,32 +19,28 @@ namespace NetWatchApp.Classes.Models
         public int Id { get; set; }
 
         [Required]
-        [MaxLength(100)]
+        [StringLength(100)]
         public string Title { get; set; }
 
         [Required]
-        [MaxLength(1000)]
         public string Description { get; set; }
 
-        [Required]
         public int ReleaseYear { get; set; }
 
         [Required]
-        [MaxLength(50)]
+        [StringLength(50)]
         public string Genre { get; set; }
 
         [Required]
-        [MaxLength(20)]
-        public string Type { get; set; } // Movie or Series
+        [StringLength(20)]
+        public string Type { get; set; } // "Movie" or "Series"
 
         [Required]
-        [MaxLength(50)]
+        [StringLength(50)]
         public string Platform { get; set; }
 
         public int Duration { get; set; } // In minutes (for movies)
 
-        // Property for image
-        [MaxLength(255)]
         public string ImagePath { get; set; }
 
         // Navigation properties
@@ -56,16 +53,10 @@ namespace NetWatchApp.Classes.Models
         {
             get
             {
-                if (Ratings == null || Ratings.Count == 0)
+                if (Ratings == null || !Ratings.Any())
                     return 0;
 
-                double sum = 0;
-                foreach (var rating in Ratings)
-                {
-                    if (rating != null)
-                        sum += rating.Score;
-                }
-                return Math.Round(sum / Ratings.Count, 1);
+                return Math.Round(Ratings.Average(r => r.Score), 1);
             }
         }
     }

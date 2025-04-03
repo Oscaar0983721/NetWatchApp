@@ -9,19 +9,15 @@ namespace NetWatchApp.Classes.Models
         [Key]
         public int Id { get; set; }
 
-        [Required]
-        [Range(1, 5)]
-        public int Score { get; set; }
+        public int UserId { get; set; }
 
-        [MaxLength(500)]
+        public int ContentId { get; set; }
+
+        public int Score { get; set; } // 1-5 stars
+
         public string Comment { get; set; }
 
-        [Required]
         public DateTime RatingDate { get; set; }
-
-        // Foreign keys
-        public int UserId { get; set; }
-        public int ContentId { get; set; }
 
         // Navigation properties
         [ForeignKey("UserId")]

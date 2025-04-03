@@ -2,19 +2,23 @@
 using NetWatchApp.Classes.Models;
 using NetWatchApp.Data.EntityFramework;
 using NetWatchApp.Interfaces;
+using NetWatchApp.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace NetWatchApp.Classes.Repositories
 {
     public class UserRepository : IUserRepository
     {
         private readonly NetWatchDbContext _context;
+        private readonly JsonDataService _jsonDataService;
 
         public UserRepository(NetWatchDbContext context)
         {
             _context = context;
+            _jsonDataService = new JsonDataService();
         }
 
         public List<User> GetAll()
@@ -58,6 +62,10 @@ namespace NetWatchApp.Classes.Repositories
 
             _context.Users.Add(user);
             _context.SaveChanges();
+
+            // Save to JSON
+            Task.Run(async () => await _jsonDataService.SaveUserToJsonAsync(user))
+                .ConfigureAwait(false);
         }
 
         public void Update(User user)
@@ -94,6 +102,10 @@ namespace NetWatchApp.Classes.Repositories
             existingUser.IsAdmin = user.IsAdmin;
 
             _context.SaveChanges();
+
+            // Save to JSON after update
+            Task.Run(async () => await _jsonDataService.SaveUserToJsonAsync(existingUser))
+                .ConfigureAwait(false);
         }
 
         public void Delete(int id)
@@ -103,6 +115,8 @@ namespace NetWatchApp.Classes.Repositories
             {
                 _context.Users.Remove(user);
                 _context.SaveChanges();
+
+                // Note: We don't delete the JSON file to maintain a history
             }
         }
     }

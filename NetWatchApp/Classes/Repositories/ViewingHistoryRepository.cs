@@ -2,19 +2,23 @@
 using NetWatchApp.Classes.Models;
 using NetWatchApp.Data.EntityFramework;
 using NetWatchApp.Interfaces;
+using NetWatchApp.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace NetWatchApp.Classes.Repositories
 {
     public class ViewingHistoryRepository : IViewingHistoryRepository
     {
         private readonly NetWatchDbContext _context;
+        private readonly JsonDataService _jsonDataService;
 
         public ViewingHistoryRepository(NetWatchDbContext context)
         {
             _context = context;
+            _jsonDataService = new JsonDataService();
         }
 
         public List<ViewingHistory> GetAll()
@@ -59,6 +63,10 @@ namespace NetWatchApp.Classes.Repositories
         {
             _context.ViewingHistories.Add(viewingHistory);
             _context.SaveChanges();
+
+            // Save to JSON
+            Task.Run(async () => await _jsonDataService.SaveViewingHistoryToJsonAsync(viewingHistory))
+                .ConfigureAwait(false);
         }
 
         public void Update(ViewingHistory viewingHistory)
@@ -73,6 +81,10 @@ namespace NetWatchApp.Classes.Repositories
             existingHistory.WatchedEpisodes = viewingHistory.WatchedEpisodes;
 
             _context.SaveChanges();
+
+            // Save to JSON after update
+            Task.Run(async () => await _jsonDataService.SaveViewingHistoryToJsonAsync(existingHistory))
+                .ConfigureAwait(false);
         }
 
         public void Delete(int id)
@@ -82,6 +94,8 @@ namespace NetWatchApp.Classes.Repositories
             {
                 _context.ViewingHistories.Remove(viewingHistory);
                 _context.SaveChanges();
+
+                // Note: We don't delete the JSON file to maintain a history
             }
         }
 
