@@ -9,15 +9,13 @@ namespace NetWatchApp.Classes.Models
         [Key]
         public int Id { get; set; }
 
-        [Required]
+        public int UserId { get; set; }
+
+        public int ContentId { get; set; }
+
         public DateTime WatchDate { get; set; }
 
-        // For series, store comma-separated episode numbers
-        public string WatchedEpisodes { get; set; }
-
-        // Foreign keys
-        public int UserId { get; set; }
-        public int ContentId { get; set; }
+        public string WatchedEpisodes { get; set; } // Comma-separated list of episode numbers
 
         // Navigation properties
         [ForeignKey("UserId")]

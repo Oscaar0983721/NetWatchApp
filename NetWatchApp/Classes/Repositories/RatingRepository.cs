@@ -2,19 +2,23 @@
 using NetWatchApp.Classes.Models;
 using NetWatchApp.Data.EntityFramework;
 using NetWatchApp.Interfaces;
+using NetWatchApp.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace NetWatchApp.Classes.Repositories
 {
     public class RatingRepository : IRatingRepository
     {
         private readonly NetWatchDbContext _context;
+        private readonly JsonDataService _jsonDataService;
 
         public RatingRepository(NetWatchDbContext context)
         {
             _context = context;
+            _jsonDataService = new JsonDataService();
         }
 
         public List<Rating> GetAll()
@@ -66,6 +70,10 @@ namespace NetWatchApp.Classes.Repositories
 
             _context.Ratings.Add(rating);
             _context.SaveChanges();
+
+            // Save to JSON
+            Task.Run(async () => await _jsonDataService.SaveRatingToJsonAsync(rating))
+                .ConfigureAwait(false);
         }
 
         public void Update(Rating rating)
@@ -81,6 +89,10 @@ namespace NetWatchApp.Classes.Repositories
             existingRating.RatingDate = rating.RatingDate;
 
             _context.SaveChanges();
+
+            // Save to JSON after update
+            Task.Run(async () => await _jsonDataService.SaveRatingToJsonAsync(existingRating))
+                .ConfigureAwait(false);
         }
 
         public void Delete(int id)
@@ -90,6 +102,8 @@ namespace NetWatchApp.Classes.Repositories
             {
                 _context.Ratings.Remove(rating);
                 _context.SaveChanges();
+
+                // Note: We don't delete the JSON file to maintain a history
             }
         }
 

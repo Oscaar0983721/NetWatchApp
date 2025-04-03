@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Windows.Forms;
 
 namespace NetWatchApp.Forms
@@ -27,8 +28,9 @@ namespace NetWatchApp.Forms
         private System.Windows.Forms.NumericUpDown numDuration;
         private System.Windows.Forms.Label lblImage;
         private System.Windows.Forms.PictureBox picContentImage;
-        private System.Windows.Forms.Button btnSelectImage;
-        private System.Windows.Forms.Label lblImagePath;
+        private System.Windows.Forms.Label lblImageUrl;
+        private System.Windows.Forms.TextBox txtImageUrl;
+        private System.Windows.Forms.Button btnPreviewImage;
         private System.Windows.Forms.Panel pnlEpisodes;
         private System.Windows.Forms.Label lblEpisodes;
         private System.Windows.Forms.DataGridView dgvEpisodes;
@@ -44,8 +46,8 @@ namespace NetWatchApp.Forms
         private List<Episode> _episodes = new List<Episode>();
         private Content _content;
         private int _contentId;
-        private string _selectedImagePath = null;
-        private string _currentImagePath = null;
+        private string _selectedImageUrl = null;
+        private string _currentImageUrl = null;
         private bool _imageChanged = false;
 
         public EditContentForm(int contentId)
@@ -56,17 +58,19 @@ namespace NetWatchApp.Forms
 
             // Populate genre combobox
             cmbGenre.Items.AddRange(new object[] {
-                "Action", "Adventure", "Comedy", "Drama", "Fantasy",
-                "Horror", "Mystery", "Romance", "Sci-Fi", "Thriller", "Documentary"
-            });
+              "Action", "Adventure", "Comedy", "Drama", "Fantasy",
+              "Horror", "Mystery", "Romance", "Sci-Fi", "Thriller", "Documentary",
+              "Animation", "Crime", "Biography", "Family", "History", "Musical", "Western"
+          });
 
             // Populate content type combobox
             cmbType.Items.AddRange(new object[] { "Movie", "Series" });
 
             // Populate platform combobox
             cmbPlatform.Items.AddRange(new object[] {
-                "Netflix", "Amazon Prime", "Disney+", "HBO Max", "Hulu", "Apple TV+", "Other"
-            });
+              "Netflix", "Amazon Prime", "Disney+", "HBO Max", "Hulu",
+              "Apple TV+", "Peacock", "Paramount+", "YouTube Premium", "Crunchyroll", "Other"
+          });
 
             // Set up event handlers
             cmbType.SelectedIndexChanged += CmbType_SelectedIndexChanged;
@@ -75,7 +79,7 @@ namespace NetWatchApp.Forms
             btnDeleteEpisode.Click += BtnDeleteEpisode_Click;
             btnSave.Click += BtnSave_Click;
             btnCancel.Click += BtnCancel_Click;
-            btnSelectImage.Click += BtnSelectImage_Click;
+            btnPreviewImage.Click += BtnPreviewImage_Click;
 
             // Load content data
             LoadContent();
@@ -99,8 +103,9 @@ namespace NetWatchApp.Forms
             this.numDuration = new System.Windows.Forms.NumericUpDown();
             this.lblImage = new System.Windows.Forms.Label();
             this.picContentImage = new System.Windows.Forms.PictureBox();
-            this.btnSelectImage = new System.Windows.Forms.Button();
-            this.lblImagePath = new System.Windows.Forms.Label();
+            this.lblImageUrl = new System.Windows.Forms.Label();
+            this.txtImageUrl = new System.Windows.Forms.TextBox();
+            this.btnPreviewImage = new System.Windows.Forms.Button();
             this.pnlEpisodes = new System.Windows.Forms.Panel();
             this.lblEpisodes = new System.Windows.Forms.Label();
             this.dgvEpisodes = new System.Windows.Forms.DataGridView();
@@ -226,20 +231,25 @@ namespace NetWatchApp.Forms
             this.picContentImage.TabIndex = 0;
             this.picContentImage.TabStop = false;
 
-            // btnSelectImage
-            this.btnSelectImage.Location = new System.Drawing.Point(310, 370);
-            this.btnSelectImage.Name = "btnSelectImage";
-            this.btnSelectImage.Size = new System.Drawing.Size(140, 30);
-            this.btnSelectImage.Text = "Select Image";
-            this.btnSelectImage.UseVisualStyleBackColor = true;
+            // lblImageUrl
+            this.lblImageUrl.AutoSize = true;
+            this.lblImageUrl.Location = new System.Drawing.Point(20, 580);
+            this.lblImageUrl.Name = "lblImageUrl";
+            this.lblImageUrl.Size = new System.Drawing.Size(82, 20);
+            this.lblImageUrl.Text = "Image URL:";
 
-            // lblImagePath
-            this.lblImagePath.AutoSize = true;
-            this.lblImagePath.Location = new System.Drawing.Point(150, 580);
-            this.lblImagePath.Name = "lblImagePath";
-            this.lblImagePath.Size = new System.Drawing.Size(87, 20);
-            this.lblImagePath.Text = "No image selected";
-            this.lblImagePath.ForeColor = System.Drawing.Color.Gray;
+            // txtImageUrl
+            this.txtImageUrl.Location = new System.Drawing.Point(150, 580);
+            this.txtImageUrl.Name = "txtImageUrl";
+            this.txtImageUrl.Size = new System.Drawing.Size(300, 27);
+            this.txtImageUrl.PlaceholderText = "Enter URL to image";
+
+            // btnPreviewImage
+            this.btnPreviewImage.Location = new System.Drawing.Point(460, 580);
+            this.btnPreviewImage.Name = "btnPreviewImage";
+            this.btnPreviewImage.Size = new System.Drawing.Size(100, 27);
+            this.btnPreviewImage.Text = "Preview";
+            this.btnPreviewImage.UseVisualStyleBackColor = true;
 
             // pnlEpisodes
             this.pnlEpisodes.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
@@ -266,10 +276,10 @@ namespace NetWatchApp.Forms
             this.dgvEpisodes.AllowUserToDeleteRows = false;
             this.dgvEpisodes.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvEpisodes.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-                this.colEpisodeNumber,
-                this.colEpisodeTitle,
-                this.colEpisodeDuration
-            });
+              this.colEpisodeNumber,
+              this.colEpisodeTitle,
+              this.colEpisodeDuration
+          });
             this.dgvEpisodes.Location = new System.Drawing.Point(10, 40);
             this.dgvEpisodes.Name = "dgvEpisodes";
             this.dgvEpisodes.ReadOnly = true;
@@ -334,7 +344,7 @@ namespace NetWatchApp.Forms
             this.btnCancel.UseVisualStyleBackColor = true;
 
             // EditContentForm
-            this.ClientSize = new System.Drawing.Size(480, 880);
+            this.ClientSize = new System.Drawing.Size(580, 880);
             this.Controls.Add(this.lblTitle);
             this.Controls.Add(this.txtTitle);
             this.Controls.Add(this.lblDescription);
@@ -351,8 +361,9 @@ namespace NetWatchApp.Forms
             this.Controls.Add(this.numDuration);
             this.Controls.Add(this.lblImage);
             this.Controls.Add(this.picContentImage);
-            this.Controls.Add(this.btnSelectImage);
-            this.Controls.Add(this.lblImagePath);
+            this.Controls.Add(this.lblImageUrl);
+            this.Controls.Add(this.txtImageUrl);
+            this.Controls.Add(this.btnPreviewImage);
             this.Controls.Add(this.pnlEpisodes);
             this.Controls.Add(this.btnSave);
             this.Controls.Add(this.btnCancel);
@@ -398,31 +409,31 @@ namespace NetWatchApp.Forms
                 }
 
                 // Load image if available
-                _currentImagePath = _content.ImagePath;
-                if (!string.IsNullOrEmpty(_currentImagePath))
+                _currentImageUrl = _content.ImagePath;
+                txtImageUrl.Text = _currentImageUrl;
+                if (!string.IsNullOrEmpty(_currentImageUrl))
                 {
-                    string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _currentImagePath);
-                    if (File.Exists(fullPath))
+                    try
                     {
-                        picContentImage.Image = Image.FromFile(fullPath);
-                        lblImagePath.Text = Path.GetFileName(_currentImagePath);
-                        lblImagePath.ForeColor = Color.Black;
+                        using (WebClient client = new WebClient())
+                        {
+                            byte[] imageData = client.DownloadData(_currentImageUrl);
+                            using (MemoryStream ms = new MemoryStream(imageData))
+                            {
+                                picContentImage.Image = Image.FromStream(ms);
+                            }
+                        }
+                        _selectedImageUrl = _currentImageUrl;
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        lblImagePath.Text = "Image file not found";
-                        lblImagePath.ForeColor = Color.Red;
+                        MessageBox.Show($"Error loading image: {ex.Message}", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
-                }
-                else
-                {
-                    lblImagePath.Text = "No image";
-                    lblImagePath.ForeColor = Color.Gray;
                 }
 
                 // Adjust form height based on content type
                 bool isSeries = _content.Type == "Series";
-                this.ClientSize = new Size(480, isSeries ? 880 : 680);
+                this.ClientSize = new Size(580, isSeries ? 880 : 680);
                 btnSave.Location = new Point(150, isSeries ? 830 : 630);
                 btnCancel.Location = new Point(270, isSeries ? 830 : 630);
             }
@@ -442,7 +453,7 @@ namespace NetWatchApp.Forms
             numDuration.Visible = !isSeries;
 
             // Adjust form height based on content type
-            this.ClientSize = new Size(480, isSeries ? 880 : 680);
+            this.ClientSize = new Size(580, isSeries ? 880 : 680);
             btnSave.Location = new Point(150, isSeries ? 830 : 630);
             btnCancel.Location = new Point(270, isSeries ? 830 : 630);
 
@@ -454,49 +465,42 @@ namespace NetWatchApp.Forms
             }
         }
 
-        private void BtnSelectImage_Click(object sender, EventArgs e)
+        private void BtnPreviewImage_Click(object sender, EventArgs e)
         {
-            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            string imageUrl = txtImageUrl.Text.Trim();
+            if (string.IsNullOrEmpty(imageUrl))
             {
-                openFileDialog.Title = "Select Image";
-                openFileDialog.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.gif;*.bmp";
-                openFileDialog.Multiselect = false;
+                MessageBox.Show("Please enter an image URL.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-                if (openFileDialog.ShowDialog() == DialogResult.OK)
+            try
+            {
+                // Clear current image
+                if (picContentImage.Image != null)
                 {
-                    try
-                    {
-                        _selectedImagePath = openFileDialog.FileName;
-                        picContentImage.Image = Image.FromFile(_selectedImagePath);
-                        lblImagePath.Text = Path.GetFileName(_selectedImagePath);
-                        lblImagePath.ForeColor = Color.Black;
-                        _imageChanged = true;
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Error loading image: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        _selectedImagePath = null;
-                        _imageChanged = false;
+                    picContentImage.Image.Dispose();
+                    picContentImage.Image = null;
+                }
 
-                        // Restore previous image if available
-                        if (!string.IsNullOrEmpty(_currentImagePath))
-                        {
-                            string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _currentImagePath);
-                            if (File.Exists(fullPath))
-                            {
-                                picContentImage.Image = Image.FromFile(fullPath);
-                                lblImagePath.Text = Path.GetFileName(_currentImagePath);
-                                lblImagePath.ForeColor = Color.Black;
-                            }
-                        }
-                        else
-                        {
-                            picContentImage.Image = null;
-                            lblImagePath.Text = "No image selected";
-                            lblImagePath.ForeColor = Color.Gray;
-                        }
+                // Download and display image
+                using (WebClient client = new WebClient())
+                {
+                    byte[] imageData = client.DownloadData(imageUrl);
+                    using (MemoryStream ms = new MemoryStream(imageData))
+                    {
+                        picContentImage.Image = Image.FromStream(ms);
                     }
                 }
+
+                _selectedImageUrl = imageUrl;
+                _imageChanged = true;
+                MessageBox.Show("Image loaded successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading image: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                _imageChanged = false;
             }
         }
 
@@ -571,46 +575,6 @@ namespace NetWatchApp.Forms
             {
                 try
                 {
-                    string imagePath = _currentImagePath;
-
-                    // Save new image if one was selected
-                    if (_imageChanged && !string.IsNullOrEmpty(_selectedImagePath))
-                    {
-                        // Create images directory if it doesn't exist
-                        string imagesDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Images");
-                        if (!Directory.Exists(imagesDirectory))
-                        {
-                            Directory.CreateDirectory(imagesDirectory);
-                        }
-
-                        // Delete old image if exists
-                        if (!string.IsNullOrEmpty(_currentImagePath))
-                        {
-                            string oldImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _currentImagePath);
-                            if (File.Exists(oldImagePath))
-                            {
-                                try
-                                {
-                                    File.Delete(oldImagePath);
-                                }
-                                catch
-                                {
-                                    // Ignore errors when deleting old image
-                                }
-                            }
-                        }
-
-                        // Generate unique filename
-                        string fileName = $"{Guid.NewGuid()}{Path.GetExtension(_selectedImagePath)}";
-                        string destinationPath = Path.Combine(imagesDirectory, fileName);
-
-                        // Copy the image file
-                        File.Copy(_selectedImagePath, destinationPath);
-
-                        // Store relative path
-                        imagePath = Path.Combine("Images", fileName);
-                    }
-
                     // Update content properties
                     _content.Title = txtTitle.Text.Trim();
                     _content.Description = txtDescription.Text.Trim();
@@ -618,7 +582,12 @@ namespace NetWatchApp.Forms
                     _content.Genre = cmbGenre.SelectedItem.ToString();
                     _content.Type = cmbType.SelectedItem.ToString();
                     _content.Platform = cmbPlatform.SelectedItem.ToString();
-                    _content.ImagePath = imagePath;
+
+                    // Update image URL if changed
+                    if (_imageChanged && !string.IsNullOrEmpty(_selectedImageUrl))
+                    {
+                        _content.ImagePath = _selectedImageUrl;
+                    }
 
                     if (_content.Type == "Movie")
                     {
@@ -628,12 +597,29 @@ namespace NetWatchApp.Forms
                     else
                     {
                         _content.Duration = 0;
-                        // Update episodes
-                        _content.Episodes.Clear();
+
+                        // Create a new list to avoid reference issues
+                        var updatedEpisodes = new List<Episode>();
+
                         foreach (var episode in _episodes)
                         {
-                            // Asegurarse de que el episodio tenga el ContentId correcto
-                            episode.ContentId = _content.Id;
+                            // Create new episode objects to avoid reference issues
+                            var updatedEpisode = new Episode
+                            {
+                                Id = episode.Id,
+                                ContentId = _content.Id,
+                                EpisodeNumber = episode.EpisodeNumber,
+                                Title = episode.Title,
+                                Duration = episode.Duration
+                            };
+
+                            updatedEpisodes.Add(updatedEpisode);
+                        }
+
+                        // Clear and add all episodes
+                        _content.Episodes.Clear();
+                        foreach (var episode in updatedEpisodes)
+                        {
                             _content.Episodes.Add(episode);
                         }
                     }
@@ -682,6 +668,12 @@ namespace NetWatchApp.Forms
                 return false;
             }
 
+            if (string.IsNullOrEmpty(txtImageUrl.Text.Trim()))
+            {
+                MessageBox.Show("Please enter an image URL.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
             return true;
         }
 
@@ -689,6 +681,20 @@ namespace NetWatchApp.Forms
         {
             DialogResult = DialogResult.Cancel;
             Close();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources
+                if (picContentImage.Image != null)
+                {
+                    picContentImage.Image.Dispose();
+                    picContentImage.Image = null;
+                }
+            }
+            base.Dispose(disposing);
         }
     }
 }

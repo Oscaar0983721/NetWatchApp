@@ -2,19 +2,23 @@
 using NetWatchApp.Classes.Models;
 using NetWatchApp.Data.EntityFramework;
 using NetWatchApp.Interfaces;
+using NetWatchApp.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace NetWatchApp.Classes.Repositories
 {
     public class ContentRepository : IContentRepository
     {
         private readonly NetWatchDbContext _context;
+        private readonly JsonDataService _jsonDataService;
 
         public ContentRepository(NetWatchDbContext context)
         {
             _context = context;
+            _jsonDataService = new JsonDataService();
         }
 
         public List<Content> GetAll()
@@ -59,6 +63,10 @@ namespace NetWatchApp.Classes.Repositories
         {
             _context.Contents.Add(content);
             _context.SaveChanges();
+
+            // Save to JSON
+            Task.Run(async () => await _jsonDataService.SaveContentToJsonAsync(content))
+                .ConfigureAwait(false);
         }
 
         public void Update(Content content)
@@ -73,65 +81,86 @@ namespace NetWatchApp.Classes.Repositories
                 throw new Exception($"Content with ID {content.Id} not found.");
             }
 
-            // Update content properties
-            existingContent.Title = content.Title;
-            existingContent.Description = content.Description;
-            existingContent.ReleaseYear = content.ReleaseYear;
-            existingContent.Genre = content.Genre;
-            existingContent.Type = content.Type;
-            existingContent.Platform = content.Platform;
-            existingContent.Duration = content.Duration;
-            existingContent.ImagePath = content.ImagePath;
-
-            // Handle episodes
-            if (content.Type == "Movie")
+            try
             {
-                // Remove all episodes if content is now a movie
-                _context.Episodes.RemoveRange(existingContent.Episodes);
-                existingContent.Episodes.Clear();
-            }
-            else
-            {
-                // Update episodes for series
-                // Remove episodes that are not in the updated list
-                var episodesToRemove = existingContent.Episodes
-                    .Where(e => !content.Episodes.Any(ne => ne.Id == e.Id))
-                    .ToList();
+                // Update content properties
+                existingContent.Title = content.Title;
+                existingContent.Description = content.Description;
+                existingContent.ReleaseYear = content.ReleaseYear;
+                existingContent.Genre = content.Genre;
+                existingContent.Type = content.Type;
+                existingContent.Platform = content.Platform;
+                existingContent.Duration = content.Duration;
+                existingContent.ImagePath = content.ImagePath;
 
-                foreach (var episode in episodesToRemove)
+                // Handle episodes
+                if (content.Type == "Movie")
                 {
-                    existingContent.Episodes.Remove(episode);
-                    _context.Episodes.Remove(episode);
+                    // Remove all episodes if content is now a movie
+                    _context.Episodes.RemoveRange(existingContent.Episodes);
+                    existingContent.Episodes.Clear();
                 }
-
-                // Update existing episodes and add new ones
-                foreach (var episode in content.Episodes)
+                else
                 {
-                    var existingEpisode = existingContent.Episodes
-                        .FirstOrDefault(e => e.Id == episode.Id);
+                    // Update episodes for series
+                    // Remove episodes that are not in the updated list
+                    var episodesToRemove = existingContent.Episodes
+                        .Where(e => !content.Episodes.Any(ne => ne.Id == e.Id))
+                        .ToList();
 
-                    if (existingEpisode != null)
+                    foreach (var episode in episodesToRemove)
                     {
-                        // Update existing episode
-                        existingEpisode.EpisodeNumber = episode.EpisodeNumber;
-                        existingEpisode.Title = episode.Title;
-                        existingEpisode.Duration = episode.Duration;
+                        existingContent.Episodes.Remove(episode);
+                        _context.Episodes.Remove(episode);
                     }
-                    else
+
+                    // Update existing episodes and add new ones
+                    foreach (var episode in content.Episodes)
                     {
-                        // Add new episode
-                        existingContent.Episodes.Add(new Episode
+                        var existingEpisode = existingContent.Episodes
+                            .FirstOrDefault(e => e.Id == episode.Id);
+
+                        if (existingEpisode != null)
                         {
-                            EpisodeNumber = episode.EpisodeNumber,
-                            Title = episode.Title,
-                            Duration = episode.Duration,
-                            ContentId = existingContent.Id
-                        });
+                            // Update existing episode
+                            existingEpisode.EpisodeNumber = episode.EpisodeNumber;
+                            existingEpisode.Title = episode.Title;
+                            existingEpisode.Duration = episode.Duration;
+                        }
+                        else
+                        {
+                            // Add new episode
+                            existingContent.Episodes.Add(new Episode
+                            {
+                                EpisodeNumber = episode.EpisodeNumber,
+                                Title = episode.Title,
+                                Duration = episode.Duration,
+                                ContentId = existingContent.Id
+                            });
+                        }
                     }
                 }
-            }
 
-            _context.SaveChanges();
+                _context.SaveChanges();
+
+                // Save to JSON after update
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _jsonDataService.SaveContentToJsonAsync(existingContent);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error saving content to JSON: {ex.Message}");
+                    }
+                }).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating content: {ex.Message}");
+                throw; // Re-throw the exception after logging
+            }
         }
 
         public void Delete(int id)
@@ -148,6 +177,8 @@ namespace NetWatchApp.Classes.Repositories
                 // Remove the content
                 _context.Contents.Remove(content);
                 _context.SaveChanges();
+
+                // Note: We don't delete the JSON file to maintain a history
             }
         }
 

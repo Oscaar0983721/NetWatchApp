@@ -1,6 +1,8 @@
 ﻿using NetWatchApp.Classes.Models;
 using NetWatchApp.Data.EntityFramework;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
 
 namespace NetWatchApp.Data.SeedData
@@ -8,6 +10,7 @@ namespace NetWatchApp.Data.SeedData
     public class DataSeeder
     {
         private readonly NetWatchDbContext _context;
+        private readonly Random _random = new Random();
 
         public DataSeeder(NetWatchDbContext context)
         {
@@ -25,25 +28,24 @@ namespace NetWatchApp.Data.SeedData
                 return; // Database already seeded
             }
 
-            // Seed users
-            SeedUsers();
-            _context.SaveChanges(); // Guardar usuarios primero
+            // Seed 100 users
+            SeedUsers(100);
+            _context.SaveChanges();
 
-            // Seed content
-            SeedContent();
-            _context.SaveChanges(); // Guardar contenido después
+            // Seed 50 movies
+            SeedMovies(50);
+            _context.SaveChanges();
 
-            // Seed ratings
-            SeedRatings();
+            // Seed 50 series
+            SeedSeries(50);
+            _context.SaveChanges();
 
-            // Seed viewing history
-            SeedViewingHistory();
-
-            // Save all changes
+            // Seed ratings and viewing history
+            SeedRatingsAndViewingHistory();
             _context.SaveChanges();
         }
 
-        private void SeedUsers()
+        private void SeedUsers(int count)
         {
             // Add admin user
             var adminUser = new User
@@ -56,240 +58,322 @@ namespace NetWatchApp.Data.SeedData
                 IsAdmin = true,
                 RegistrationDate = DateTime.Now.AddMonths(-6)
             };
+            _context.Users.Add(adminUser);
 
             // Add regular users
-            var user1 = new User
-            {
-                IdentificationNumber = "USER001",
-                FirstName = "John",
-                LastName = "Doe",
-                Email = "john.doe@example.com",
-                Password = "password123", // In a real app, this would be hashed
-                IsAdmin = false,
-                RegistrationDate = DateTime.Now.AddMonths(-3)
-            };
+            var firstNames = new List<string> { "John", "Jane", "Michael", "Emily", "David", "Sarah", "Robert", "Lisa", "Daniel", "Emma",
+              "William", "Olivia", "James", "Sophia", "Benjamin", "Isabella", "Jacob", "Mia", "Samuel", "Charlotte" };
 
-            var user2 = new User
-            {
-                IdentificationNumber = "USER002",
-                FirstName = "Jane",
-                LastName = "Smith",
-                Email = "jane.smith@example.com",
-                Password = "password123", // In a real app, this would be hashed
-                IsAdmin = false,
-                RegistrationDate = DateTime.Now.AddMonths(-2)
-            };
+            var lastNames = new List<string> { "Smith", "Johnson", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Wilson",
+              "Anderson", "Taylor", "Thomas", "Moore", "Jackson", "Martin", "Lee", "Thompson", "White", "Harris" };
 
-            _context.Users.Add(adminUser);
-            _context.Users.Add(user1);
-            _context.Users.Add(user2);
+            for (int i = 0; i < count - 1; i++)
+            {
+                var firstName = firstNames[_random.Next(firstNames.Count)];
+                var lastName = lastNames[_random.Next(lastNames.Count)];
+                var userId = $"USER{(i + 1).ToString("D3")}";
+
+                var user = new User
+                {
+                    IdentificationNumber = userId,
+                    FirstName = firstName,
+                    LastName = lastName,
+                    Email = $"{firstName.ToLower()}.{lastName.ToLower()}{_random.Next(1, 100)}@example.com",
+                    Password = "password123", // In a real app, this would be hashed
+                    IsAdmin = false,
+                    RegistrationDate = DateTime.Now.AddDays(-_random.Next(1, 365))
+                };
+
+                _context.Users.Add(user);
+            }
         }
 
-        private void SeedContent()
+        private void SeedMovies(int count)
         {
-            // Add movies
-            var movie1 = new Content
-            {
-                Title = "The Matrix",
-                Description = "A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers.",
-                ReleaseYear = 1999,
-                Genre = "Sci-Fi",
-                Type = "Movie",
-                Platform = "Netflix",
-                Duration = 136
-            };
+            var genres = new List<string> {
+              "Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary",
+              "Drama", "Fantasy", "Horror", "Mystery", "Romance", "Sci-Fi",
+              "Thriller", "Western", "Biography", "Family", "History", "Musical"
+          };
 
-            var movie2 = new Content
-            {
-                Title = "Inception",
-                Description = "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
-                ReleaseYear = 2010,
-                Genre = "Sci-Fi",
-                Type = "Movie",
-                Platform = "HBO Max",
-                Duration = 148
-            };
+            var platforms = new List<string> {
+              "Netflix", "Amazon Prime", "Disney+", "HBO Max", "Hulu", "Apple TV+",
+              "Peacock", "Paramount+", "Crunchyroll", "YouTube Premium"
+          };
 
-            var movie3 = new Content
-            {
-                Title = "The Shawshank Redemption",
-                Description = "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",
-                ReleaseYear = 1994,
-                Genre = "Drama",
-                Type = "Movie",
-                Platform = "Amazon Prime",
-                Duration = 142
-            };
+            var movieTitles = new List<string> {
+              "The Last Frontier", "Midnight Echo", "Eternal Sunshine", "Crimson Tide", "Shadow Hunter",
+              "Golden Hour", "Starlight Express", "Ocean's Depth", "Silent Whisper", "Neon Nights",
+              "Desert Storm", "Frozen Heart", "Infinite Galaxy", "Mountain Peak", "Jungle Adventure",
+              "City Lights", "Broken Mirror", "Diamond Heist", "Electric Dreams", "Fire and Ice",
+              "Ghost Protocol", "Hidden Figures", "Iron Will", "Jumping Jack", "Kingdom Falls",
+              "Lost in Time", "Mystic River", "Night Watch", "Open Season", "Phantom Menace",
+              "Quantum Field", "Red October", "Silver Lining", "Thunder Road", "Underwater World",
+              "Valley of Death", "Winter Soldier", "X-Factor", "Yellow Submarine", "Zero Hour",
+              "Alien Covenant", "Blue Sky", "Crystal Cave", "Dark Knight", "Echo Chamber",
+              "Flying High", "Green Mile", "Hollow Earth", "Island Paradise", "Jurassic Age"
+          };
 
-            // Add series with episodes
-            var series1 = new Content
+            for (int i = 0; i < count; i++)
             {
-                Title = "Stranger Things",
-                Description = "When a young boy disappears, his mother, a police chief, and his friends must confront terrifying supernatural forces in order to get him back.",
-                ReleaseYear = 2016,
-                Genre = "Sci-Fi",
-                Type = "Series",
-                Platform = "Netflix",
-                Duration = 0
-            };
+                var title = movieTitles[i % movieTitles.Count] + (_random.Next(2) == 0 ? "" : " " + (_random.Next(1, 4)).ToString());
+                var genre = genres[_random.Next(genres.Count)];
+                var platform = platforms[_random.Next(platforms.Count)];
+                var releaseYear = _random.Next(1980, 2023);
+                var duration = _random.Next(75, 180);
 
-            series1.Episodes.Add(new Episode
-            {
-                EpisodeNumber = 1,
-                Title = "Chapter One: The Vanishing of Will Byers",
-                Duration = 47
-            });
+                var movie = new Content
+                {
+                    Title = title,
+                    Description = $"A {genre.ToLower()} movie about {GetRandomDescription(genre)}",
+                    ReleaseYear = releaseYear,
+                    Genre = genre,
+                    Type = "Movie",
+                    Platform = platform,
+                    Duration = duration,
+                    // Image URL from placeholder service with movie poster dimensions (typically 2:3 ratio)
+                    ImagePath = $"https://picsum.photos/300/450?random={i + 1}"
+                };
 
-            series1.Episodes.Add(new Episode
-            {
-                EpisodeNumber = 2,
-                Title = "Chapter Two: The Weirdo on Maple Street",
-                Duration = 55
-            });
-
-            series1.Episodes.Add(new Episode
-            {
-                EpisodeNumber = 3,
-                Title = "Chapter Three: Holly, Jolly",
-                Duration = 51
-            });
-
-            var series2 = new Content
-            {
-                Title = "Breaking Bad",
-                Description = "A high school chemistry teacher diagnosed with inoperable lung cancer turns to manufacturing and selling methamphetamine in order to secure his family's future.",
-                ReleaseYear = 2008,
-                Genre = "Drama",
-                Type = "Series",
-                Platform = "Netflix",
-                Duration = 0
-            };
-
-            series2.Episodes.Add(new Episode
-            {
-                EpisodeNumber = 1,
-                Title = "Pilot",
-                Duration = 58
-            });
-
-            series2.Episodes.Add(new Episode
-            {
-                EpisodeNumber = 2,
-                Title = "Cat's in the Bag...",
-                Duration = 48
-            });
-
-            series2.Episodes.Add(new Episode
-            {
-                EpisodeNumber = 3,
-                Title = "...And the Bag's in the River",
-                Duration = 48
-            });
-
-            _context.Contents.Add(movie1);
-            _context.Contents.Add(movie2);
-            _context.Contents.Add(movie3);
-            _context.Contents.Add(series1);
-            _context.Contents.Add(series2);
+                _context.Contents.Add(movie);
+            }
         }
 
-        private void SeedRatings()
+        private void SeedSeries(int count)
         {
-            // Obtener usuarios y contenidos ya guardados en la base de datos
+            var genres = new List<string> {
+              "Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary",
+              "Drama", "Fantasy", "Horror", "Mystery", "Romance", "Sci-Fi",
+              "Thriller", "Western", "Biography", "Family", "History", "Musical"
+          };
+
+            var platforms = new List<string> {
+              "Netflix", "Amazon Prime", "Disney+", "HBO Max", "Hulu", "Apple TV+",
+              "Peacock", "Paramount+", "Crunchyroll", "YouTube Premium"
+          };
+
+            var seriesTitles = new List<string> {
+              "Breaking Point", "Crown Jewels", "Dark Matter", "Epic Quest", "Fatal Attraction",
+              "Gravity Falls", "Hidden Secrets", "Infinite Loop", "Justice League", "Kingdom Come",
+              "Lost City", "Midnight Club", "New World Order", "Ocean's Deep", "Phantom Force",
+              "Quantum Leap", "Rising Sun", "Supernatural", "Time Travelers", "Urban Legend",
+              "Vampire Diaries", "Westworld", "X-Files", "Yellow Brick Road", "Zero Hour",
+              "American Dream", "Beyond Reality", "Cosmic Journey", "Dangerous Minds", "Eternal Life",
+              "Fargo", "Golden Age", "Heroes Rising", "Insidious", "Jungle Book",
+              "Knight Rider", "Last Chance", "Mystery Zone", "Northern Exposure", "Outlander",
+              "Prison Break", "Quantum Physics", "River Valley", "Survivor's Tale", "Twin Peaks"
+          };
+
+            for (int i = 0; i < count; i++)
+            {
+                var title = seriesTitles[i % seriesTitles.Count] + (_random.Next(2) == 0 ? "" : " " + (_random.Next(1, 4)).ToString());
+                var genre = genres[_random.Next(genres.Count)];
+                var platform = platforms[_random.Next(platforms.Count)];
+                var releaseYear = _random.Next(1990, 2023);
+
+                var series = new Content
+                {
+                    Title = title,
+                    Description = $"A {genre.ToLower()} series about {GetRandomDescription(genre)}",
+                    ReleaseYear = releaseYear,
+                    Genre = genre,
+                    Type = "Series",
+                    Platform = platform,
+                    Duration = 0,
+                    // Image URL from placeholder service with TV show poster dimensions (typically 2:3 ratio)
+                    ImagePath = $"https://picsum.photos/300/450?random={i + 100}" // Use different random numbers than movies
+                };
+
+                // Add 3-8 episodes to each series
+                int episodeCount = _random.Next(3, 9);
+                for (int j = 1; j <= episodeCount; j++)
+                {
+                    series.Episodes.Add(new Episode
+                    {
+                        EpisodeNumber = j,
+                        Title = $"Episode {j}: {GetRandomEpisodeTitle()}",
+                        Duration = _random.Next(20, 61) // 20-60 minutes
+                    });
+                }
+
+                _context.Contents.Add(series);
+            }
+        }
+
+        private void SeedRatingsAndViewingHistory()
+        {
             var users = _context.Users.ToList();
             var contents = _context.Contents.ToList();
 
-            // Verificar que haya suficientes usuarios y contenidos antes de agregar ratings
-            if (users.Count < 3 || contents.Count < 5)
+            // Each user rates and watches some content
+            foreach (var user in users)
             {
-                // Si no hay suficientes datos, salir del método
-                return;
+                // Skip admin for ratings
+                if (user.IsAdmin)
+                    continue;
+
+                // Rate 1-10 random content items
+                int ratingsCount = _random.Next(1, 11);
+                var contentsToRate = GetRandomSubset(contents, ratingsCount);
+
+                foreach (var content in contentsToRate)
+                {
+                    var rating = new Rating
+                    {
+                        UserId = user.Id,
+                        ContentId = content.Id,
+                        Score = _random.Next(1, 6), // 1-5 stars
+                        Comment = GetRandomComment(content.Type),
+                        RatingDate = DateTime.Now.AddDays(-_random.Next(1, 180))
+                    };
+
+                    _context.Ratings.Add(rating);
+                }
+
+                // Watch 1-15 random content items
+                int watchCount = _random.Next(1, 16);
+                var contentsToWatch = GetRandomSubset(contents, watchCount);
+
+                foreach (var content in contentsToWatch)
+                {
+                    string watchedEpisodes = "";
+
+                    // If it's a series, randomly select which episodes were watched
+                    if (content.Type == "Series" && content.Episodes.Any())
+                    {
+                        var episodeNumbers = content.Episodes
+                            .Select(e => e.EpisodeNumber)
+                            .OrderBy(n => n)
+                            .ToList();
+
+                        // Watch 1 to all episodes
+                        int episodesToWatch = _random.Next(1, episodeNumbers.Count + 1);
+                        var watchedEpisodeNumbers = GetRandomSubset(episodeNumbers, episodesToWatch);
+
+                        watchedEpisodes = string.Join(",", watchedEpisodeNumbers);
+                    }
+
+                    var viewingHistory = new ViewingHistory
+                    {
+                        UserId = user.Id,
+                        ContentId = content.Id,
+                        WatchDate = DateTime.Now.AddDays(-_random.Next(1, 365)),
+                        WatchedEpisodes = watchedEpisodes
+                    };
+
+                    _context.ViewingHistories.Add(viewingHistory);
+                }
             }
-
-            // Ahora es seguro agregar los ratings
-            _context.Ratings.Add(new Rating
-            {
-                UserId = users[1].Id, // John Doe
-                ContentId = contents[0].Id, // The Matrix
-                Score = 5,
-                Comment = "One of the best sci-fi movies ever made!",
-                RatingDate = DateTime.Now.AddDays(-30)
-            });
-
-            _context.Ratings.Add(new Rating
-            {
-                UserId = users[2].Id, // Jane Smith
-                ContentId = contents[0].Id, // The Matrix
-                Score = 4,
-                Comment = "Great movie, amazing special effects.",
-                RatingDate = DateTime.Now.AddDays(-25)
-            });
-
-            _context.Ratings.Add(new Rating
-            {
-                UserId = users[1].Id, // John Doe
-                ContentId = contents[3].Id, // Stranger Things
-                Score = 5,
-                Comment = "Addictive series with great characters.",
-                RatingDate = DateTime.Now.AddDays(-20)
-            });
-
-            _context.Ratings.Add(new Rating
-            {
-                UserId = users[2].Id, // Jane Smith
-                ContentId = contents[4].Id, // Breaking Bad
-                Score = 5,
-                Comment = "Possibly the best TV show ever made.",
-                RatingDate = DateTime.Now.AddDays(-15)
-            });
         }
 
-        private void SeedViewingHistory()
+        private T GetRandomElement<T>(List<T> list)
         {
-            // Obtener usuarios y contenidos ya guardados en la base de datos
-            var users = _context.Users.ToList();
-            var contents = _context.Contents.ToList();
+            return list[_random.Next(list.Count)];
+        }
 
-            // Verificar que haya suficientes usuarios y contenidos antes de agregar el historial
-            if (users.Count < 3 || contents.Count < 5)
+        private List<T> GetRandomSubset<T>(List<T> list, int count)
+        {
+            return list.OrderBy(x => _random.Next()).Take(count).ToList();
+        }
+
+        private string GetRandomDescription(string genre)
+        {
+            var descriptions = new Dictionary<string, List<string>>
+          {
+              { "Action", new List<string> {
+                  "a police officer fighting crime",
+                  "an epic battle between good and evil",
+                  "a special forces team on a dangerous mission",
+                  "a martial arts master seeking revenge"
+              }},
+              { "Adventure", new List<string> {
+                  "an explorer searching for a lost city",
+                  "a journey through uncharted territories",
+                  "a treasure hunt across multiple continents",
+                  "a perilous expedition to an unknown land"
+              }},
+              { "Comedy", new List<string> {
+                  "a family vacation gone wrong",
+                  "office workers dealing with an eccentric boss",
+                  "friends getting into hilarious situations",
+                  "a fish out of water scenario in a new culture"
+              }},
+              { "Drama", new List<string> {
+                  "a family dealing with loss",
+                  "complicated relationships between colleagues",
+                  "overcoming personal struggles",
+                  "ethical dilemmas in modern society"
+              }},
+              { "Sci-Fi", new List<string> {
+                  "an alien invasion of Earth",
+                  "time travelers altering history",
+                  "a future society with advanced technology",
+                  "space exploration and discovery"
+              }},
+              { "Horror", new List<string> {
+                  "a haunted house terrorizing its new residents",
+                  "a serial killer stalking a small town",
+                  "supernatural entities invading our world",
+                  "surviving a zombie apocalypse"
+              }}
+          };
+
+            // Default description for genres not in the dictionary
+            if (!descriptions.ContainsKey(genre))
             {
-                // Si no hay suficientes datos, salir del método
-                return;
+                return "an engaging story with twists and turns";
             }
 
-            // Ahora es seguro agregar el historial de visualización
-            _context.ViewingHistories.Add(new ViewingHistory
-            {
-                UserId = users[1].Id, // John Doe
-                ContentId = contents[0].Id, // The Matrix
-                WatchDate = DateTime.Now.AddDays(-40),
-                WatchedEpisodes = ""
-            });
+            return GetRandomElement(descriptions[genre]);
+        }
 
-            _context.ViewingHistories.Add(new ViewingHistory
-            {
-                UserId = users[2].Id, // Jane Smith
-                ContentId = contents[0].Id, // The Matrix
-                WatchDate = DateTime.Now.AddDays(-35),
-                WatchedEpisodes = ""
-            });
+        private string GetRandomEpisodeTitle()
+        {
+            var titles = new List<string> {
+              "The Beginning", "New Horizons", "Dark Secrets", "Lost and Found",
+              "Rising Tide", "Breaking Point", "Redemption", "Sacrifice",
+              "Unexpected Journey", "Hidden Truth", "Last Stand", "Final Countdown",
+              "Revelation", "Point of No Return", "Twist of Fate", "Aftermath",
+              "Crossroads", "The Reunion", "Fresh Start", "End Game"
+          };
 
-            // Add viewing history for series with episodes
-            _context.ViewingHistories.Add(new ViewingHistory
-            {
-                UserId = users[1].Id, // John Doe
-                ContentId = contents[3].Id, // Stranger Things
-                WatchDate = DateTime.Now.AddDays(-25),
-                WatchedEpisodes = "1,2,3" // Watched episodes 1, 2, and 3
-            });
+            return GetRandomElement(titles);
+        }
 
-            _context.ViewingHistories.Add(new ViewingHistory
-            {
-                UserId = users[2].Id, // Jane Smith
-                ContentId = contents[4].Id, // Breaking Bad
-                WatchDate = DateTime.Now.AddDays(-20),
-                WatchedEpisodes = "1,2" // Watched episodes 1 and 2
-            });
+        private string GetRandomComment(string contentType)
+        {
+            var positiveComments = new List<string> {
+              $"One of the best {contentType.ToLower()}s I've watched!",
+              "Absolutely loved it!",
+              "Great story and amazing characters.",
+              "Highly recommend to everyone.",
+              "Can't wait to watch more like this!"
+          };
+
+            var neutralComments = new List<string> {
+              "It was okay, had its moments.",
+              "Decent watch but nothing special.",
+              "Some good parts, some not so good.",
+              "Worth watching once.",
+              "It was entertaining enough."
+          };
+
+            var negativeComments = new List<string> {
+              "Not what I expected.",
+              "Could have been better.",
+              "Disappointing story.",
+              "Wouldn't recommend.",
+              "Had potential but fell short."
+          };
+
+            // 60% chance of positive, 30% neutral, 10% negative
+            int rand = _random.Next(100);
+            if (rand < 60)
+                return GetRandomElement(positiveComments);
+            else if (rand < 90)
+                return GetRandomElement(neutralComments);
+            else
+                return GetRandomElement(negativeComments);
         }
     }
 }

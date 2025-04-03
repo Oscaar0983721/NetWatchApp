@@ -14,14 +14,13 @@ namespace NetWatchApp.Forms
         private System.Windows.Forms.NumericUpDown numDuration;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Button btnCancel;
-        public Episode Episode { get; private set; }
-        private int _episodeNumber;
 
-        public AddEpisodeForm(int episodeNumber)
+        public Episode Episode { get; private set; }
+
+        public AddEpisodeForm(int nextEpisodeNumber)
         {
             InitializeComponent();
-            _episodeNumber = episodeNumber;
-            numEpisodeNumber.Value = episodeNumber;
+            numEpisodeNumber.Value = nextEpisodeNumber;
         }
 
         private void InitializeComponent()
@@ -40,14 +39,14 @@ namespace NetWatchApp.Forms
             this.lblEpisodeNumber.Location = new System.Drawing.Point(20, 20);
             this.lblEpisodeNumber.Name = "lblEpisodeNumber";
             this.lblEpisodeNumber.Size = new System.Drawing.Size(65, 20);
-            this.lblEpisodeNumber.Text = "Episode:";
+            this.lblEpisodeNumber.Text = "Number:";
 
             // numEpisodeNumber
-            this.numEpisodeNumber.Location = new System.Drawing.Point(150, 20);
+            this.numEpisodeNumber.Location = new System.Drawing.Point(120, 20);
             this.numEpisodeNumber.Maximum = 1000;
             this.numEpisodeNumber.Minimum = 1;
             this.numEpisodeNumber.Name = "numEpisodeNumber";
-            this.numEpisodeNumber.Size = new System.Drawing.Size(80, 27);
+            this.numEpisodeNumber.Size = new System.Drawing.Size(150, 27);
             this.numEpisodeNumber.Value = 1;
 
             // lblTitle
@@ -58,7 +57,7 @@ namespace NetWatchApp.Forms
             this.lblTitle.Text = "Title:";
 
             // txtTitle
-            this.txtTitle.Location = new System.Drawing.Point(150, 60);
+            this.txtTitle.Location = new System.Drawing.Point(120, 60);
             this.txtTitle.Name = "txtTitle";
             this.txtTitle.Size = new System.Drawing.Size(250, 27);
 
@@ -74,27 +73,27 @@ namespace NetWatchApp.Forms
             this.numDuration.Maximum = 300;
             this.numDuration.Minimum = 1;
             this.numDuration.Name = "numDuration";
-            this.numDuration.Size = new System.Drawing.Size(80, 27);
-            this.numDuration.Value = 45;
+            this.numDuration.Size = new System.Drawing.Size(120, 27);
+            this.numDuration.Value = 30;
 
             // btnSave
-            this.btnSave.Location = new System.Drawing.Point(150, 150);
+            this.btnSave.Location = new System.Drawing.Point(100, 150);
             this.btnSave.Name = "btnSave";
             this.btnSave.Size = new System.Drawing.Size(100, 35);
             this.btnSave.Text = "Save";
             this.btnSave.UseVisualStyleBackColor = true;
-            this.btnSave.Click += BtnSave_Click;
+            this.btnSave.Click += new System.EventHandler(this.BtnSave_Click);
 
             // btnCancel
-            this.btnCancel.Location = new System.Drawing.Point(270, 150);
+            this.btnCancel.Location = new System.Drawing.Point(220, 150);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(100, 35);
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
-            this.btnCancel.Click += BtnCancel_Click;
+            this.btnCancel.Click += new System.EventHandler(this.BtnCancel_Click);
 
             // AddEpisodeForm
-            this.ClientSize = new System.Drawing.Size(420, 200);
+            this.ClientSize = new System.Drawing.Size(400, 200);
             this.Controls.Add(this.lblEpisodeNumber);
             this.Controls.Add(this.numEpisodeNumber);
             this.Controls.Add(this.lblTitle);
