@@ -1,33 +1,35 @@
 ﻿using NetWatchApp.Classes.Models;
 using NetWatchApp.Classes.Repositories;
-using NetWatchApp.Data.EntityFramework;
 using System;
-using System.Drawing;
 using System.Windows.Forms;
 
 namespace NetWatchApp.Forms
 {
     public partial class LoginForm : Form
     {
-        private System.Windows.Forms.Label lblTitle;
         private System.Windows.Forms.Label lblEmail;
         private System.Windows.Forms.TextBox txtEmail;
         private System.Windows.Forms.Label lblPassword;
         private System.Windows.Forms.TextBox txtPassword;
         private System.Windows.Forms.Button btnLogin;
         private System.Windows.Forms.Button btnRegister;
-        private System.Windows.Forms.LinkLabel lnkForgotPassword;
+        private System.Windows.Forms.Label lblTitle;
         private readonly UserRepository _userRepository;
 
         public LoginForm()
         {
             InitializeComponent();
-            _userRepository = new UserRepository(new NetWatchDbContext());
+            _userRepository = new UserRepository(new Data.EntityFramework.NetWatchDbContext());
 
             // Set up event handlers
             btnLogin.Click += BtnLogin_Click;
             btnRegister.Click += BtnRegister_Click;
-            lnkForgotPassword.LinkClicked += LnkForgotPassword_LinkClicked;
+
+            // For testing purposes, pre-fill admin credentials
+#if DEBUG
+            txtEmail.Text = "admin@netwatch.com";
+            txtPassword.Text = "admin123";
+#endif
         }
 
         private void InitializeComponent()
@@ -39,7 +41,6 @@ namespace NetWatchApp.Forms
             this.txtPassword = new System.Windows.Forms.TextBox();
             this.btnLogin = new System.Windows.Forms.Button();
             this.btnRegister = new System.Windows.Forms.Button();
-            this.lnkForgotPassword = new System.Windows.Forms.LinkLabel();
 
             // lblTitle
             this.lblTitle.AutoSize = true;
@@ -47,7 +48,7 @@ namespace NetWatchApp.Forms
             this.lblTitle.Location = new System.Drawing.Point(100, 30);
             this.lblTitle.Name = "lblTitle";
             this.lblTitle.Size = new System.Drawing.Size(200, 37);
-            this.lblTitle.Text = "NetWatch Login";
+            this.lblTitle.Text = "NetWatch App";
 
             // lblEmail
             this.lblEmail.AutoSize = true;
@@ -75,30 +76,21 @@ namespace NetWatchApp.Forms
             this.txtPassword.Size = new System.Drawing.Size(200, 27);
 
             // btnLogin
-            this.btnLogin.Location = new System.Drawing.Point(150, 200);
+            this.btnLogin.Location = new System.Drawing.Point(100, 200);
             this.btnLogin.Name = "btnLogin";
             this.btnLogin.Size = new System.Drawing.Size(100, 35);
             this.btnLogin.Text = "Login";
             this.btnLogin.UseVisualStyleBackColor = true;
 
             // btnRegister
-            this.btnRegister.Location = new System.Drawing.Point(260, 200);
+            this.btnRegister.Location = new System.Drawing.Point(220, 200);
             this.btnRegister.Name = "btnRegister";
             this.btnRegister.Size = new System.Drawing.Size(100, 35);
             this.btnRegister.Text = "Register";
             this.btnRegister.UseVisualStyleBackColor = true;
 
-            // lnkForgotPassword
-            this.lnkForgotPassword.AutoSize = true;
-            this.lnkForgotPassword.Location = new System.Drawing.Point(150, 250);
-            this.lnkForgotPassword.Name = "lnkForgotPassword";
-            this.lnkForgotPassword.Size = new System.Drawing.Size(124, 20);
-            this.lnkForgotPassword.TabIndex = 0;
-            this.lnkForgotPassword.TabStop = true;
-            this.lnkForgotPassword.Text = "Forgot Password?";
-
             // LoginForm
-            this.ClientSize = new System.Drawing.Size(400, 300);
+            this.ClientSize = new System.Drawing.Size(400, 280);
             this.Controls.Add(this.lblTitle);
             this.Controls.Add(this.lblEmail);
             this.Controls.Add(this.txtEmail);
@@ -106,13 +98,12 @@ namespace NetWatchApp.Forms
             this.Controls.Add(this.txtPassword);
             this.Controls.Add(this.btnLogin);
             this.Controls.Add(this.btnRegister);
-            this.Controls.Add(this.lnkForgotPassword);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "LoginForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "NetWatch - Login";
+            this.Text = "NetWatch App - Login";
         }
 
         private void BtnLogin_Click(object sender, EventArgs e)
@@ -124,38 +115,37 @@ namespace NetWatchApp.Forms
 
                 if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
                 {
-                    MessageBox.Show("Please enter both email and password.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Please enter both email and password.", "Login Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
                 var user = _userRepository.Authenticate(email, password);
+
                 if (user != null)
                 {
-                    // Login successful
-                    this.Hide();
+                    // Successful login
+                    MessageBox.Show($"Welcome, {user.FirstName}!", "Login Successful", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                    try
+                    // Open main form based on user type
+                    if (user.IsAdmin)
                     {
-                        // Open main form
-                        using (var mainForm = new MainForm(user))
-                        {
-                            mainForm.ShowDialog();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Error opening main form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                    finally
-                    {
-                        // Show login form again when main form is closed
+                        var adminForm = new AdminDashboardForm(user);
+                        this.Hide();
+                        adminForm.ShowDialog();
                         this.Show();
-                        txtPassword.Clear();
+                    }
+                    else
+                    {
+                        var mainForm = new MainForm(user);
+                        this.Hide();
+                        mainForm.ShowDialog();
+                        this.Show();
                     }
                 }
                 else
                 {
-                    MessageBox.Show("Invalid email or password.", "Authentication Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    // Failed login
+                    MessageBox.Show("Invalid email or password.", "Login Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
@@ -166,16 +156,13 @@ namespace NetWatchApp.Forms
 
         private void BtnRegister_Click(object sender, EventArgs e)
         {
-            // Open registration form
-            using (var registerForm = new RegisterForm())
+            var registerForm = new RegisterForm();
+            if (registerForm.ShowDialog() == DialogResult.OK)
             {
-                registerForm.ShowDialog();
+                // If registration was successful, pre-fill the email
+                txtEmail.Text = registerForm.RegisteredEmail;
+                txtPassword.Focus();
             }
-        }
-
-        private void LnkForgotPassword_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            MessageBox.Show("Please contact the administrator to reset your password.", "Password Reset", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }
