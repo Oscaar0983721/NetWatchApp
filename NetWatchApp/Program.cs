@@ -1,52 +1,78 @@
+using System;
+using System.Windows.Forms;
 using NetWatchApp.Data.EntityFramework;
 using NetWatchApp.Data.SeedData;
-using NetWatchApp.Forms;
-using System;
-using System.IO;
-using System.Windows.Forms;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace NetWatchApp
 {
     static class Program
     {
         /// <summary>
-        /// The main entry point for the application.
+        ///  The main entry point for the application.
         /// </summary>
         [STAThread]
         static void Main()
         {
+            Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
             try
             {
-                // Inicializar base de datos y sembrar datos
-                Log("Inicializando base de datos y sembrando datos...");
-                using (var context = new NetWatchDbContext())
-                {
-                    var seeder = new DataSeeder(context);
-                    seeder.Seed();
-                }
-                Log("Base de datos inicializada correctamente.");
+                // Initialize database and seed data
+                Console.WriteLine("Initializing database...");
+                InitializeDatabase();
+                Console.WriteLine("Database initialization completed.");
 
-                // Iniciar con el formulario de login
-                Application.Run(new LoginForm());
+                // Start the application
+                Application.Run(new Forms.LoginForm());
             }
             catch (Exception ex)
             {
-                string errorMessage = $"Error al iniciar la aplicación: {ex.Message}\n\nDetalles: {ex.StackTrace}";
-                MessageBox.Show(errorMessage, "Error de Inicialización", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Log(errorMessage);
+                MessageBox.Show($"Error initializing application: {ex.Message}\n\n{ex.StackTrace}",
+                    "Application Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        /// <summary>
-        /// Método para registrar logs en un archivo de texto
-        /// </summary>
-        private static void Log(string message)
+        private static void InitializeDatabase()
         {
-            string logPath = "app_log.txt";
-            File.AppendAllText(logPath, $"{DateTime.Now}: {message}\n");
+            try
+            {
+                using (var context = new NetWatchDbContext())
+                {
+                    // Ensure database is created
+                    context.Database.EnsureCreated();
+                    Console.WriteLine("Database created or already exists.");
+
+                    // Check if we need to seed data
+                    bool needsSeed = !context.Users.Any();
+
+                    if (needsSeed)
+                    {
+                        Console.WriteLine("Database needs seeding. Starting data seeder...");
+                        var seeder = new DataSeeder(context);
+                        seeder.Seed();
+                        Console.WriteLine("Database seeding completed.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Database already contains data. Skipping seed operation.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error initializing database: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                }
+                throw; // Re-throw to show error to user
+            }
         }
     }
 }
+
