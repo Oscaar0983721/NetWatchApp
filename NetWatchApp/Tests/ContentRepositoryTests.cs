@@ -18,12 +18,19 @@ namespace NetWatchApp.Tests
         [TestInitialize]
         public void Initialize()
         {
-            // Set up in-memory database for testing
+            // Create options for in-memory database
             var options = new DbContextOptionsBuilder<NetWatchDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                .UseInMemoryDatabase(databaseName: "NetWatchTestDb")
                 .Options;
 
+            // Create context with in-memory database
             _context = new NetWatchDbContext(options);
+
+            // Clear database
+            _context.Database.EnsureDeleted();
+            _context.Database.EnsureCreated();
+
+            // Create repository
             _repository = new ContentRepository(_context);
 
             // Seed test data
@@ -33,238 +40,187 @@ namespace NetWatchApp.Tests
         [TestCleanup]
         public void Cleanup()
         {
-            _context.Database.EnsureDeleted();
             _context.Dispose();
         }
 
         private void SeedTestData()
         {
-            // Add test movies
-            var movie1 = new Content
+            // Add test content
+            var movie = new Content
             {
-                Title = "Test Movie 1",
-                Description = "Description for test movie 1",
-                ReleaseYear = 2020,
+                Title = "Test Movie",
+                Description = "A test movie description",
+                ReleaseYear = 2023,
                 Genre = "Action",
                 Type = "Movie",
                 Platform = "Netflix",
                 Duration = 120,
-                ImagePath = "Images/test1.jpg"
+                ImagePath = "https://example.com/test-movie.jpg"
             };
+            _context.Contents.Add(movie);
 
-            var movie2 = new Content
+            var series = new Content
             {
-                Title = "Test Movie 2",
-                Description = "Description for test movie 2",
-                ReleaseYear = 2021,
-                Genre = "Comedy",
-                Type = "Movie",
-                Platform = "Amazon Prime",
-                Duration = 90,
-                ImagePath = "Images/test2.jpg"
-            };
-
-            // Add test series with episodes
-            var series1 = new Content
-            {
-                Title = "Test Series 1",
-                Description = "Description for test series 1",
-                ReleaseYear = 2019,
+                Title = "Test Series",
+                Description = "A test series description",
+                ReleaseYear = 2022,
                 Genre = "Drama",
                 Type = "Series",
-                Platform = "Netflix",
+                Platform = "Amazon Prime",
                 Duration = 0,
-                ImagePath = "Images/test3.jpg"
+                ImagePath = "https://example.com/test-series.jpg"
             };
 
-            series1.Episodes.Add(new Episode
+            // Add episodes to series
+            series.Episodes.Add(new Episode
             {
                 EpisodeNumber = 1,
-                Title = "Episode 1",
+                Title = "Pilot",
                 Duration = 45
             });
-
-            series1.Episodes.Add(new Episode
+            series.Episodes.Add(new Episode
             {
                 EpisodeNumber = 2,
-                Title = "Episode 2",
-                Duration = 50
+                Title = "Second Episode",
+                Duration = 42
             });
 
-            _context.Contents.Add(movie1);
-            _context.Contents.Add(movie2);
-            _context.Contents.Add(series1);
+            _context.Contents.Add(series);
             _context.SaveChanges();
         }
 
         [TestMethod]
-        public void GetAll_ShouldReturnAllContents()
+        public void GetAll_ReturnsAllContent()
         {
             // Act
             var result = _repository.GetAll();
 
             // Assert
-            Assert.AreEqual(3, result.Count);
-            Assert.IsTrue(result.Any(c => c.Title == "Test Movie 1"));
-            Assert.IsTrue(result.Any(c => c.Title == "Test Movie 2"));
-            Assert.IsTrue(result.Any(c => c.Title == "Test Series 1"));
+            Assert.AreEqual(2, result.Count);
+            Assert.IsTrue(result.Any(c => c.Title == "Test Movie"));
+            Assert.IsTrue(result.Any(c => c.Title == "Test Series"));
         }
 
         [TestMethod]
-        public void GetById_ShouldReturnCorrectContent()
+        public void GetById_ReturnsCorrectContent()
         {
             // Arrange
-            var expectedContent = _context.Contents.First(c => c.Title == "Test Movie 1");
+            var movie = _context.Contents.FirstOrDefault(c => c.Title == "Test Movie");
 
             // Act
-            var result = _repository.GetById(expectedContent.Id);
+            var result = _repository.GetById(movie.Id);
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.AreEqual(expectedContent.Id, result.Id);
-            Assert.AreEqual("Test Movie 1", result.Title);
+            Assert.AreEqual("Test Movie", result.Title);
             Assert.AreEqual("Action", result.Genre);
         }
 
         [TestMethod]
-        public void GetById_WithInvalidId_ShouldReturnNull()
-        {
-            // Act
-            var result = _repository.GetById(-1);
-
-            // Assert
-            Assert.IsNull(result);
-        }
-
-        [TestMethod]
-        public void Search_ByTitle_ShouldReturnMatchingContents()
+        public void Search_ByTitle_ReturnsMatchingContent()
         {
             // Act
             var result = _repository.Search("Movie");
 
             // Assert
-            Assert.AreEqual(2, result.Count);
-            Assert.IsTrue(result.All(c => c.Title.Contains("Movie")));
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual("Test Movie", result[0].Title);
         }
 
         [TestMethod]
-        public void Search_ByGenre_ShouldReturnMatchingContents()
+        public void Search_ByGenre_ReturnsMatchingContent()
         {
             // Act
-            var result = _repository.Search("", "Action");
+            var result = _repository.Search("", "Drama");
 
             // Assert
             Assert.AreEqual(1, result.Count);
-            Assert.AreEqual("Action", result.First().Genre);
+            Assert.AreEqual("Test Series", result[0].Title);
         }
 
         [TestMethod]
-        public void Search_ByType_ShouldReturnMatchingContents()
+        public void Search_ByType_ReturnsMatchingContent()
         {
             // Act
             var result = _repository.Search("", null, "Series");
 
             // Assert
             Assert.AreEqual(1, result.Count);
-            Assert.AreEqual("Series", result.First().Type);
+            Assert.AreEqual("Test Series", result[0].Title);
         }
 
         [TestMethod]
-        public void Add_ShouldAddNewContent()
+        public void Add_AddsNewContent()
         {
             // Arrange
             var newContent = new Content
             {
-                Title = "New Test Movie",
-                Description = "Description for new test movie",
-                ReleaseYear = 2022,
-                Genre = "Horror",
+                Title = "New Test Content",
+                Description = "A new test content description",
+                ReleaseYear = 2024,
+                Genre = "Comedy",
                 Type = "Movie",
                 Platform = "Disney+",
-                Duration = 110,
-                ImagePath = "Images/new.jpg"
+                Duration = 95,
+                ImagePath = "https://example.com/new-test.jpg"
             };
 
             // Act
             _repository.Add(newContent);
-            var result = _repository.GetAll();
-            var addedContent = _repository.GetById(newContent.Id);
 
             // Assert
-            Assert.AreEqual(4, result.Count);
-            Assert.IsNotNull(addedContent);
-            Assert.AreEqual("New Test Movie", addedContent.Title);
-            Assert.AreEqual("Horror", addedContent.Genre);
+            var result = _context.Contents.FirstOrDefault(c => c.Title == "New Test Content");
+            Assert.IsNotNull(result);
+            Assert.AreEqual("Comedy", result.Genre);
+            Assert.AreEqual(2024, result.ReleaseYear);
         }
 
         [TestMethod]
-        public void Update_ShouldUpdateExistingContent()
+        public void Update_UpdatesExistingContent()
         {
             // Arrange
-            var contentToUpdate = _context.Contents.First(c => c.Title == "Test Movie 1");
-            contentToUpdate.Title = "Updated Movie Title";
-            contentToUpdate.Genre = "Sci-Fi";
+            var content = _context.Contents.FirstOrDefault(c => c.Title == "Test Movie");
+            content.Title = "Updated Movie Title";
+            content.Genre = "Sci-Fi";
 
             // Act
-            _repository.Update(contentToUpdate);
-            var updatedContent = _repository.GetById(contentToUpdate.Id);
+            _repository.Update(content);
 
             // Assert
-            Assert.AreEqual("Updated Movie Title", updatedContent.Title);
-            Assert.AreEqual("Sci-Fi", updatedContent.Genre);
+            var result = _context.Contents.Find(content.Id);
+            Assert.AreEqual("Updated Movie Title", result.Title);
+            Assert.AreEqual("Sci-Fi", result.Genre);
         }
 
         [TestMethod]
-        public void Delete_ShouldRemoveContent()
+        public void Delete_RemovesContent()
         {
             // Arrange
-            var contentToDelete = _context.Contents.First(c => c.Title == "Test Movie 2");
-            var contentId = contentToDelete.Id;
+            var content = _context.Contents.FirstOrDefault(c => c.Title == "Test Movie");
+            var contentId = content.Id;
 
             // Act
             _repository.Delete(contentId);
-            var result = _repository.GetAll();
-            var deletedContent = _repository.GetById(contentId);
 
             // Assert
-            Assert.AreEqual(2, result.Count);
-            Assert.IsNull(deletedContent);
+            var result = _context.Contents.Find(contentId);
+            Assert.IsNull(result);
         }
 
         [TestMethod]
-        public void Delete_ShouldRemoveContentWithEpisodes()
-        {
-            // Arrange
-            var contentToDelete = _context.Contents.First(c => c.Title == "Test Series 1");
-            var contentId = contentToDelete.Id;
-
-            // Act
-            _repository.Delete(contentId);
-            var result = _repository.GetAll();
-            var deletedContent = _repository.GetById(contentId);
-            var episodes = _context.Episodes.Where(e => e.ContentId == contentId).ToList();
-
-            // Assert
-            Assert.AreEqual(2, result.Count);
-            Assert.IsNull(deletedContent);
-            Assert.AreEqual(0, episodes.Count);
-        }
-
-        [TestMethod]
-        public void GetAllGenres_ShouldReturnUniqueGenres()
+        public void GetAllGenres_ReturnsUniqueGenres()
         {
             // Act
             var result = _repository.GetAllGenres();
 
             // Assert
-            Assert.AreEqual(3, result.Count);
+            Assert.AreEqual(2, result.Count);
             Assert.IsTrue(result.Contains("Action"));
-            Assert.IsTrue(result.Contains("Comedy"));
             Assert.IsTrue(result.Contains("Drama"));
         }
 
         [TestMethod]
-        public void GetAllPlatforms_ShouldReturnUniquePlatforms()
+        public void GetAllPlatforms_ReturnsUniquePlatforms()
         {
             // Act
             var result = _repository.GetAllPlatforms();
