@@ -13,6 +13,14 @@ namespace NetWatchApp.Data.EntityFramework
         public DbSet<Rating> Ratings { get; set; }
         public DbSet<ViewingHistory> ViewingHistories { get; set; }
 
+        public NetWatchDbContext() : base()
+        {
+        }
+
+        public NetWatchDbContext(DbContextOptions<NetWatchDbContext> options) : base(options)
+        {
+        }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             // Get the application's base directory
