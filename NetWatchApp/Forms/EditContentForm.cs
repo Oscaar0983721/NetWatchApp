@@ -415,10 +415,10 @@ namespace NetWatchApp.Forms
                 {
                     try
                     {
-                        using (WebClient client = new WebClient())
+                        using (var httpClient = new System.Net.Http.HttpClient())
                         {
-                            byte[] imageData = client.DownloadData(_currentImageUrl);
-                            using (MemoryStream ms = new MemoryStream(imageData))
+                            var imageData = httpClient.GetByteArrayAsync(_currentImageUrl).Result;
+                            using (var ms = new System.IO.MemoryStream(imageData))
                             {
                                 picContentImage.Image = Image.FromStream(ms);
                             }
@@ -484,10 +484,10 @@ namespace NetWatchApp.Forms
                 }
 
                 // Download and display image
-                using (WebClient client = new WebClient())
+                using (var httpClient = new System.Net.Http.HttpClient())
                 {
-                    byte[] imageData = client.DownloadData(imageUrl);
-                    using (MemoryStream ms = new MemoryStream(imageData))
+                    var imageData = httpClient.GetByteArrayAsync(imageUrl).Result;
+                    using (var ms = new System.IO.MemoryStream(imageData))
                     {
                         picContentImage.Image = Image.FromStream(ms);
                     }
