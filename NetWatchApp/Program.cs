@@ -4,6 +4,7 @@ using NetWatchApp.Data.EntityFramework;
 using NetWatchApp.Data.SeedData;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace NetWatchApp
 {
@@ -23,7 +24,7 @@ namespace NetWatchApp
             {
                 // Initialize database and seed data
                 Console.WriteLine("Initializing database...");
-                InitializeDatabase();
+                ForceRecreateDatabase();
                 Console.WriteLine("Database initialization completed.");
 
                 // Start the application
@@ -36,41 +37,59 @@ namespace NetWatchApp
             }
         }
 
-        private static void InitializeDatabase()
+        private static void ForceRecreateDatabase()
         {
             try
             {
+                // Forzar la eliminación de la base de datos existente
+                string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "NetWatchApp.db");
+
+                // Cerrar cualquier conexión abierta
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                // Eliminar el archivo si existe
+                if (File.Exists(dbPath))
+                {
+                    try
+                    {
+                        File.Delete(dbPath);
+                        Console.WriteLine("Base de datos existente eliminada.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"No se pudo eliminar la base de datos: {ex.Message}");
+
+                        // Si no se puede eliminar, intentar con otro nombre
+                        dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "NetWatchApp_new.db");
+                        Console.WriteLine($"Usando ruta alternativa: {dbPath}");
+                    }
+                }
+
+                // Crear una nueva instancia del contexto
                 using (var context = new NetWatchDbContext())
                 {
-                    // Ensure database is created
+                    // Asegurar que la base de datos se crea con el esquema correcto
+                    context.Database.EnsureDeleted(); // Intenta eliminar la base de datos a nivel de EF Core
                     context.Database.EnsureCreated();
-                    Console.WriteLine("Database created or already exists.");
+                    Console.WriteLine("Base de datos creada correctamente.");
 
-                    // Check if we need to seed data
-                    bool needsSeed = !context.Users.Any();
-
-                    if (needsSeed)
-                    {
-                        Console.WriteLine("Database needs seeding. Starting data seeder...");
-                        var seeder = new DataSeeder(context);
-                        seeder.Seed();
-                        Console.WriteLine("Database seeding completed.");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Database already contains data. Skipping seed operation.");
-                    }
+                    // Sembrar datos iniciales
+                    Console.WriteLine("Iniciando siembra de datos...");
+                    var seeder = new DataSeeder(context);
+                    seeder.Seed();
+                    Console.WriteLine("Siembra de datos completada.");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error initializing database: {ex.Message}");
+                Console.WriteLine($"Error al inicializar la base de datos: {ex.Message}");
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 if (ex.InnerException != null)
                 {
                     Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
                 }
-                throw; // Re-throw to show error to user
+                throw; // Re-lanzar para mostrar el error al usuario
             }
         }
     }

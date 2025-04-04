@@ -43,7 +43,11 @@ namespace NetWatchApp.Classes.Repositories
 
         public User Authenticate(string email, string password)
         {
-            return _context.Users.FirstOrDefault(u => u.Email == email && u.Password == password);
+            // Modificado para evitar problemas con alias y columnas
+            return _context.Users
+                .AsNoTracking() // Para mejorar el rendimiento en consultas de solo lectura
+                .Where(u => u.Email == email && u.Password == password)
+                .FirstOrDefault();
         }
 
         public void Add(User user)

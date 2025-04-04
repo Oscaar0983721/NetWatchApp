@@ -2,6 +2,7 @@
 using NetWatchApp.Classes.Repositories;
 using System;
 using System.Windows.Forms;
+using System.Diagnostics;
 
 namespace NetWatchApp.Forms
 {
@@ -118,6 +119,9 @@ namespace NetWatchApp.Forms
                     MessageBox.Show("Please enter both email and password.", "Login Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
+
+                // Depuración para ver la consulta SQL
+                Debug.WriteLine($"Attempting login with email: {email}");
 
                 var user = _userRepository.Authenticate(email, password);
 
