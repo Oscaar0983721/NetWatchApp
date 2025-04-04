@@ -394,10 +394,10 @@ namespace NetWatchApp.Forms
             {
                 try
                 {
-                    using (WebClient client = new WebClient())
+                    using (var httpClient = new System.Net.Http.HttpClient())
                     {
-                        byte[] imageData = client.DownloadData(_content.ImagePath);
-                        using (MemoryStream ms = new MemoryStream(imageData))
+                        var imageData = httpClient.GetByteArrayAsync(_content.ImagePath).Result;
+                        using (var ms = new System.IO.MemoryStream(imageData))
                         {
                             picContentImage.Image = Image.FromStream(ms);
                         }
