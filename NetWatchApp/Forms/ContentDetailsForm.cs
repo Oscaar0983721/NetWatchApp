@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Windows.Forms;
+using System.Diagnostics;
 
 namespace NetWatchApp.Forms
 {
@@ -421,14 +422,28 @@ namespace NetWatchApp.Forms
 
         private void BtnRate_Click(object sender, EventArgs e)
         {
-            using (var ratingForm = new RatingForm(_content, _currentUser))
+            try
             {
-                if (ratingForm.ShowDialog() == DialogResult.OK)
+                Debug.WriteLine($"Iniciando proceso de calificación para contenido: {_content.Title} (ID: {_content.Id})");
+
+                using (var ratingForm = new RatingForm(_content, _currentUser))
                 {
-                    // Refresh rating display
-                    double averageRating = _ratingRepository.GetAverageRatingForContent(_content.Id);
-                    lblRatingValue.Text = $"{averageRating:F1} / 5.0";
+                    if (ratingForm.ShowDialog() == DialogResult.OK)
+                    {
+                        // Refresh rating display
+                        double averageRating = _ratingRepository.GetAverageRatingForContent(_content.Id);
+                        lblRatingValue.Text = $"{averageRating:F1} / 5.0";
+                        MessageBox.Show("Your rating has been saved successfully!", "Rating Saved", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        Debug.WriteLine($"Calificación guardada exitosamente para contenido: {_content.Title}");
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error al calificar contenido: {ex.Message}");
+                Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                MessageBox.Show($"Error saving rating: {ex.Message}\n\nStack trace: {ex.StackTrace}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
