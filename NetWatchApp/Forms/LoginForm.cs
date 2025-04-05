@@ -15,22 +15,35 @@ namespace NetWatchApp.Forms
         private System.Windows.Forms.Button btnLogin;
         private System.Windows.Forms.Button btnRegister;
         private System.Windows.Forms.Label lblTitle;
+        private System.Windows.Forms.Label lblStatus;
         private readonly UserRepository _userRepository;
 
         public LoginForm()
         {
-            InitializeComponent();
-            _userRepository = new UserRepository(new Data.EntityFramework.NetWatchDbContext());
+            try
+            {
+                Debug.WriteLine("Iniciando LoginForm...");
+                InitializeComponent();
+                _userRepository = new UserRepository(new Data.EntityFramework.NetWatchDbContext());
 
-            // Set up event handlers
-            btnLogin.Click += BtnLogin_Click;
-            btnRegister.Click += BtnRegister_Click;
+                // Set up event handlers
+                btnLogin.Click += BtnLogin_Click;
+                btnRegister.Click += BtnRegister_Click;
 
-            // For testing purposes, pre-fill admin credentials
+                // For testing purposes, pre-fill admin credentials
 #if DEBUG
-            txtEmail.Text = "admin@netwatch.com";
-            txtPassword.Text = "admin123";
+                txtEmail.Text = "admin@netwatch.com";
+                txtPassword.Text = "admin123";
 #endif
+
+                Debug.WriteLine("LoginForm inicializado correctamente");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error al inicializar LoginForm: {ex.Message}");
+                MessageBox.Show($"Error al inicializar la ventana de inicio de sesión: {ex.Message}\n\n{ex.StackTrace}",
+                    "Error de Inicialización", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void InitializeComponent()
@@ -42,6 +55,7 @@ namespace NetWatchApp.Forms
             this.txtPassword = new System.Windows.Forms.TextBox();
             this.btnLogin = new System.Windows.Forms.Button();
             this.btnRegister = new System.Windows.Forms.Button();
+            this.lblStatus = new System.Windows.Forms.Label();
 
             // lblTitle
             this.lblTitle.AutoSize = true;
@@ -90,6 +104,16 @@ namespace NetWatchApp.Forms
             this.btnRegister.Text = "Register";
             this.btnRegister.UseVisualStyleBackColor = true;
 
+            // lblStatus
+            this.lblStatus.AutoSize = true;
+            this.lblStatus.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic);
+            this.lblStatus.Location = new System.Drawing.Point(100, 250);
+            this.lblStatus.Name = "lblStatus";
+            this.lblStatus.Size = new System.Drawing.Size(200, 20);
+            this.lblStatus.Text = "";
+            this.lblStatus.ForeColor = System.Drawing.Color.Blue;
+            this.lblStatus.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+
             // LoginForm
             this.ClientSize = new System.Drawing.Size(400, 280);
             this.Controls.Add(this.lblTitle);
@@ -99,6 +123,7 @@ namespace NetWatchApp.Forms
             this.Controls.Add(this.txtPassword);
             this.Controls.Add(this.btnLogin);
             this.Controls.Add(this.btnRegister);
+            this.Controls.Add(this.lblStatus);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -114,25 +139,33 @@ namespace NetWatchApp.Forms
                 string email = txtEmail.Text.Trim();
                 string password = txtPassword.Text;
 
+                Debug.WriteLine($"Intentando iniciar sesión con email: {email}");
+
                 if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
                 {
                     MessageBox.Show("Please enter both email and password.", "Login Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                // Depuración para ver la consulta SQL
-                Debug.WriteLine($"Attempting login with email: {email}");
+                // Disable login button and show status
+                btnLogin.Enabled = false;
+                lblStatus.Text = "Logging in...";
+                lblStatus.Visible = true;
+                Application.DoEvents(); // Force UI update
 
                 var user = _userRepository.Authenticate(email, password);
 
                 if (user != null)
                 {
                     // Successful login
-                    MessageBox.Show($"Welcome, {user.FirstName}!", "Login Successful", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Debug.WriteLine($"Inicio de sesión exitoso para: {user.FirstName} {user.LastName}");
+                    lblStatus.Text = "Login successful!";
 
                     // Open main form based on user type
                     if (user.IsAdmin)
                     {
+                        Debug.WriteLine("Abriendo AdminDashboardForm...");
+                        MessageBox.Show($"Welcome, {user.FirstName}! Logging in as Administrator.", "Login Successful", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         var adminForm = new AdminDashboardForm(user);
                         this.Hide();
                         adminForm.ShowDialog();
@@ -140,32 +173,82 @@ namespace NetWatchApp.Forms
                     }
                     else
                     {
-                        var mainForm = new MainForm(user);
-                        this.Hide();
-                        mainForm.ShowDialog();
-                        this.Show();
+                        Debug.WriteLine("Abriendo MainForm para usuario regular...");
+                        try
+                        {
+                            // Show a welcome message before showing the main form
+                            MessageBox.Show($"Welcome, {user.FirstName}! Please wait while the content loads.", "Login Successful", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                            // Create the main form
+                            var mainForm = new MainForm(user);
+                            Debug.WriteLine("MainForm instanciado correctamente");
+
+                            // Hide the login form
+                            this.Hide();
+                            Debug.WriteLine("LoginForm oculto, mostrando MainForm...");
+
+                            // Show the main form as a dialog to ensure proper modal behavior
+                            mainForm.ShowDialog();
+
+                            // Show login form again when main form closes
+                            this.Show();
+                            Debug.WriteLine("MainForm cerrado, mostrando LoginForm nuevamente");
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"Error crítico al abrir MainForm: {ex.Message}");
+                            Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                            MessageBox.Show($"Error al abrir la ventana principal:\n\n{ex.Message}\n\n{ex.StackTrace}",
+                                "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            this.Show(); // Ensure login form is visible again if MainForm fails
+                        }
                     }
                 }
                 else
                 {
                     // Failed login
+                    Debug.WriteLine("Inicio de sesión fallido: credenciales inválidas");
+                    lblStatus.Text = "Invalid credentials";
+                    lblStatus.ForeColor = System.Drawing.Color.Red;
                     MessageBox.Show("Invalid email or password.", "Login Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
+
+                // Re-enable login button
+                btnLogin.Enabled = true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error during login: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Debug.WriteLine($"Error durante el inicio de sesión: {ex.Message}");
+                lblStatus.Text = "Error logging in";
+                lblStatus.ForeColor = System.Drawing.Color.Red;
+                MessageBox.Show($"Error during login: {ex.Message}\n\n{ex.StackTrace}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                // Re-enable login button
+                btnLogin.Enabled = true;
             }
         }
 
         private void BtnRegister_Click(object sender, EventArgs e)
         {
-            var registerForm = new RegisterForm();
-            if (registerForm.ShowDialog() == DialogResult.OK)
+            try
             {
-                // If registration was successful, pre-fill the email
-                txtEmail.Text = registerForm.RegisteredEmail;
-                txtPassword.Focus();
+                Debug.WriteLine("Abriendo formulario de registro...");
+                var registerForm = new RegisterForm();
+                if (registerForm.ShowDialog() == DialogResult.OK)
+                {
+                    // If registration was successful, pre-fill the email
+                    txtEmail.Text = registerForm.RegisteredEmail;
+                    txtPassword.Focus();
+                    lblStatus.Text = "Registration successful! Please login.";
+                    lblStatus.ForeColor = System.Drawing.Color.Green;
+                    lblStatus.Visible = true;
+                    Debug.WriteLine($"Registro exitoso para: {registerForm.RegisteredEmail}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error al abrir el formulario de registro: {ex.Message}");
+                MessageBox.Show($"Error opening registration form: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
