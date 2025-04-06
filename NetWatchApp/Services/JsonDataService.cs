@@ -122,6 +122,7 @@ namespace NetWatchApp.Services
 
         #region User Methods
 
+        // Modificar el método LoadUsers para asegurar que se cargan correctamente
         private void LoadUsers()
         {
             try
@@ -154,9 +155,10 @@ namespace NetWatchApp.Services
                     }
                 }
 
-                // If no users exist, create admin user
+                // Si no hay usuarios, crear el usuario administrador
                 if (_userCache.Count == 0)
                 {
+                    Debug.WriteLine("No se encontraron usuarios. Creando usuario administrador predeterminado.");
                     var adminUser = new User
                     {
                         Id = _nextUserId++,
@@ -166,11 +168,14 @@ namespace NetWatchApp.Services
                         Email = "admin@netwatch.com",
                         Password = "admin123",
                         IsAdmin = true,
-                        RegistrationDate = DateTime.Now.AddMonths(-6)
+                        RegistrationDate = DateTime.Now.AddMonths(-6),
+                        Ratings = new List<Rating>(),
+                        ViewingHistories = new List<ViewingHistory>()
                     };
 
                     _userCache[adminUser.Id] = adminUser;
                     SaveUserToJson(adminUser);
+                    Debug.WriteLine("Usuario administrador creado con ID: " + adminUser.Id);
                 }
 
                 Debug.WriteLine($"Loaded {_userCache.Count} users");
@@ -202,11 +207,38 @@ namespace NetWatchApp.Services
             return _userCache.Values.FirstOrDefault(u => u.IdentificationNumber.Equals(identificationNumber, StringComparison.OrdinalIgnoreCase));
         }
 
+        // Modificar el método AuthenticateUser para asegurar que funcione correctamente
         public User AuthenticateUser(string email, string password)
         {
-            return _userCache.Values.FirstOrDefault(u =>
-                u.Email.Equals(email, StringComparison.OrdinalIgnoreCase) &&
-                u.Password == password);
+            try
+            {
+                Debug.WriteLine($"Intentando autenticar usuario con email: {email}");
+
+                // Buscar el usuario por email (ignorando mayúsculas/minúsculas)
+                var user = _userCache.Values.FirstOrDefault(u =>
+                    string.Equals(u.Email, email, StringComparison.OrdinalIgnoreCase));
+
+                if (user == null)
+                {
+                    Debug.WriteLine("Usuario no encontrado");
+                    return null;
+                }
+
+                // Verificar la contraseña (en un sistema real, esto debería usar hash)
+                if (user.Password == password)
+                {
+                    Debug.WriteLine($"Autenticación exitosa para: {user.FirstName} {user.LastName}");
+                    return user;
+                }
+
+                Debug.WriteLine("Contraseña incorrecta");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error en AuthenticateUser: {ex.Message}");
+                throw;
+            }
         }
 
         public User AddUser(User user)
@@ -354,6 +386,12 @@ namespace NetWatchApp.Services
         #endregion
 
         #region Content Methods
+
+        // Añadir un método para verificar si hay datos en el sistema
+        public bool HasData()
+        {
+            return _userCache.Count > 0 && _contentCache.Count > 0;
+        }
 
         private void LoadContent()
         {
