@@ -24,6 +24,12 @@ namespace NetWatchApp
                 var jsonDataService = new JsonDataService();
                 Console.WriteLine("JSON data storage initialized successfully.");
 
+                // Initialize and run data seeder
+                Console.WriteLine("Checking if data seeding is needed...");
+                var dataSeeder = new Data.SeedData.DataSeeder();
+                dataSeeder.Seed();
+                Console.WriteLine("Data seeding process completed.");
+
                 // Start the application
                 Application.Run(new Forms.LoginForm());
             }
