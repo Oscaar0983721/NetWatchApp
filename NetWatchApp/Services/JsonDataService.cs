@@ -600,6 +600,13 @@ namespace NetWatchApp.Services
             }
         }
 
+        // Método para compatibilidad con el código existente
+        public async Task SaveContentToJsonAsync(Content content)
+        {
+            SaveContentToJson(content);
+            await Task.CompletedTask;
+        }
+
         private void UpdateContentIndex()
         {
             try
@@ -837,6 +844,13 @@ namespace NetWatchApp.Services
             }
         }
 
+        // Método para compatibilidad con el código existente
+        public async Task SaveRatingToJsonAsync(Rating rating)
+        {
+            SaveRatingToJson(rating);
+            await Task.CompletedTask;
+        }
+
         private void UpdateRatingIndex()
         {
             try
@@ -1064,6 +1078,13 @@ namespace NetWatchApp.Services
                 Debug.WriteLine($"Error saving viewing history to JSON: {ex.Message}");
                 throw new Exception($"Error saving viewing history to JSON: {ex.Message}", ex);
             }
+        }
+
+        // Método para compatibilidad con el código existente
+        public async Task SaveViewingHistoryToJsonAsync(ViewingHistory viewingHistory)
+        {
+            SaveViewingHistoryToJson(viewingHistory);
+            await Task.CompletedTask;
         }
 
         private void UpdateViewingHistoryIndex()
