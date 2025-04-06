@@ -3,6 +3,7 @@ using NetWatchApp.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using NetWatchApp.Data.EntityFramework;
 
 namespace NetWatchApp.Classes.Repositories
 {
@@ -11,6 +12,12 @@ namespace NetWatchApp.Classes.Repositories
         private readonly JsonDataService _jsonDataService;
 
         public UserRepository()
+        {
+            _jsonDataService = new JsonDataService();
+        }
+
+        // Constructor para compatibilidad con código existente
+        public UserRepository(NetWatchDbContext context)
         {
             _jsonDataService = new JsonDataService();
         }
