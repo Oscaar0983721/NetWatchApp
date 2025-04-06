@@ -132,6 +132,7 @@ namespace NetWatchApp.Forms
             this.Text = "NetWatch App - Login";
         }
 
+        // Mejorar el método BtnLogin_Click para mostrar más información de depuración
         private void BtnLogin_Click(object sender, EventArgs e)
         {
             try
@@ -153,12 +154,18 @@ namespace NetWatchApp.Forms
                 lblStatus.Visible = true;
                 Application.DoEvents(); // Force UI update
 
+                // Verificar si estamos usando las credenciales de administrador predeterminadas
+                if (email.Equals("admin@netwatch.com", StringComparison.OrdinalIgnoreCase) && password == "admin123")
+                {
+                    Debug.WriteLine("Usando credenciales de administrador predeterminadas");
+                }
+
                 var user = _userRepository.Authenticate(email, password);
 
                 if (user != null)
                 {
                     // Successful login
-                    Debug.WriteLine($"Inicio de sesión exitoso para: {user.FirstName} {user.LastName}");
+                    Debug.WriteLine($"Inicio de sesión exitoso para: {user.FirstName} {user.LastName}, ID: {user.Id}, IsAdmin: {user.IsAdmin}");
                     lblStatus.Text = "Login successful!";
 
                     // Open main form based on user type
