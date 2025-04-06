@@ -1,5 +1,5 @@
 ﻿using NetWatchApp.Classes.Models;
-using NetWatchApp.Data.EntityFramework;
+using NetWatchApp.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,55 +10,51 @@ namespace NetWatchApp.Data.SeedData
 {
     public class DataSeeder
     {
-        private readonly NetWatchDbContext _context;
+        private readonly JsonDataService _jsonDataService;
         private readonly Random _random = new Random();
 
-        public DataSeeder(NetWatchDbContext context)
+        public DataSeeder()
         {
-            _context = context;
+            _jsonDataService = new JsonDataService();
         }
 
         public void Seed()
         {
             try
             {
-                // Create database if it doesn't exist
-                _context.Database.EnsureCreated();
-
                 // Check if there's already data
-                if (_context.Users.Any() && _context.Contents.Any())
+                var users = _jsonDataService.GetAllUsers();
+                var contents = _jsonDataService.GetAllContent();
+
+                if (users.Any() && contents.Any())
                 {
-                    Console.WriteLine("Database already seeded. Skipping seed operation.");
-                    return; // Database already seeded
+                    Console.WriteLine("Data already seeded. Skipping seed operation.");
+                    return; // Data already seeded
                 }
 
-                Console.WriteLine("Starting database seeding...");
+                Console.WriteLine("Starting data seeding...");
 
                 // Seed users in smaller batches to avoid timeout
                 SeedUsers(100);
-                _context.SaveChanges();
                 Console.WriteLine("Users seeded successfully.");
 
                 // Seed movies in smaller batches
                 SeedMovies(50);
-                _context.SaveChanges();
                 Console.WriteLine("Movies seeded successfully.");
 
                 // Seed series in smaller batches
                 SeedSeries(50);
-                _context.SaveChanges();
                 Console.WriteLine("Series seeded successfully.");
 
                 // Seed ratings and viewing history
                 SeedRatingsAndViewingHistory();
-                _context.SaveChanges();
                 Console.WriteLine("Ratings and viewing history seeded successfully.");
 
-                Console.WriteLine("Database seeding completed successfully.");
+                Console.WriteLine("Data seeding completed successfully.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error during database seeding: {ex.Message}");
+                Console.WriteLine($"Error during data seeding: {ex.Message}");
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 if (ex.InnerException != null)
                 {
@@ -72,19 +68,22 @@ namespace NetWatchApp.Data.SeedData
         {
             Console.WriteLine($"Seeding {count} users...");
 
-            // Add admin user
-            var adminUser = new User
+            // Add admin user if not exists
+            var adminUser = _jsonDataService.GetUserByEmail("admin@netwatch.com");
+            if (adminUser == null)
             {
-                IdentificationNumber = "ADMIN001",
-                FirstName = "Admin",
-                LastName = "User",
-                Email = "admin@netwatch.com",
-                Password = "admin123", // In a real app, this would be hashed
-                IsAdmin = true,
-                RegistrationDate = DateTime.Now.AddMonths(-6)
-            };
-            _context.Users.Add(adminUser);
-            _context.SaveChanges();
+                adminUser = new User
+                {
+                    IdentificationNumber = "ADMIN001",
+                    FirstName = "Admin",
+                    LastName = "User",
+                    Email = "admin@netwatch.com",
+                    Password = "admin123", // In a real app, this would be hashed
+                    IsAdmin = true,
+                    RegistrationDate = DateTime.Now.AddMonths(-6)
+                };
+                _jsonDataService.AddUser(adminUser);
+            }
             Console.WriteLine("Admin user added.");
 
             // Add regular users in batches
@@ -98,8 +97,6 @@ namespace NetWatchApp.Data.SeedData
             int batchSize = 20;
             for (int batch = 0; batch < count / batchSize; batch++)
             {
-                var userBatch = new List<User>();
-
                 for (int i = 0; i < batchSize; i++)
                 {
                     int userIndex = batch * batchSize + i;
@@ -118,11 +115,9 @@ namespace NetWatchApp.Data.SeedData
                         RegistrationDate = DateTime.Now.AddDays(-_random.Next(1, 365))
                     };
 
-                    userBatch.Add(user);
+                    _jsonDataService.AddUser(user);
                 }
 
-                _context.Users.AddRange(userBatch);
-                _context.SaveChanges();
                 Console.WriteLine($"Added batch {batch + 1} of users ({batchSize} users)");
             }
         }
@@ -159,8 +154,6 @@ namespace NetWatchApp.Data.SeedData
             int batchSize = 10;
             for (int batch = 0; batch < count / batchSize; batch++)
             {
-                var movieBatch = new List<Content>();
-
                 for (int i = 0; i < batchSize; i++)
                 {
                     int movieIndex = batch * batchSize + i;
@@ -183,11 +176,9 @@ namespace NetWatchApp.Data.SeedData
                         ImagePath = $"https://picsum.photos/300/450?random={movieIndex + 1}"
                     };
 
-                    movieBatch.Add(movie);
+                    _jsonDataService.AddContent(movie);
                 }
 
-                _context.Contents.AddRange(movieBatch);
-                _context.SaveChanges();
                 Console.WriteLine($"Added batch {batch + 1} of movies ({batchSize} movies)");
             }
         }
@@ -223,8 +214,6 @@ namespace NetWatchApp.Data.SeedData
             int batchSize = 10;
             for (int batch = 0; batch < count / batchSize; batch++)
             {
-                var seriesBatch = new List<Content>();
-
                 for (int i = 0; i < batchSize; i++)
                 {
                     int seriesIndex = batch * batchSize + i;
@@ -243,7 +232,8 @@ namespace NetWatchApp.Data.SeedData
                         Platform = platform,
                         Duration = 0,
                         // Image URL from placeholder service with TV show poster dimensions (typically 2:3 ratio)
-                        ImagePath = $"https://picsum.photos/300/450?random={seriesIndex + 100}" // Use different random numbers than movies
+                        ImagePath = $"https://picsum.photos/300/450?random={seriesIndex + 100}", // Use different random numbers than movies
+                        Episodes = new List<Episode>()
                     };
 
                     // Add 3-8 episodes to each series
@@ -258,11 +248,9 @@ namespace NetWatchApp.Data.SeedData
                         });
                     }
 
-                    seriesBatch.Add(series);
+                    _jsonDataService.AddContent(series);
                 }
 
-                _context.Contents.AddRange(seriesBatch);
-                _context.SaveChanges();
                 Console.WriteLine($"Added batch {batch + 1} of series ({batchSize} series)");
             }
         }
@@ -271,8 +259,8 @@ namespace NetWatchApp.Data.SeedData
         {
             Console.WriteLine("Seeding ratings and viewing history...");
 
-            var users = _context.Users.Where(u => !u.IsAdmin).Take(20).ToList(); // Limit to 20 users for performance
-            var contents = _context.Contents.Include(c => c.Episodes).Take(30).ToList(); // Limit to 30 contents for performance
+            var users = _jsonDataService.GetAllUsers().Where(u => !u.IsAdmin).Take(20).ToList(); // Limit to 20 users for performance
+            var contents = _jsonDataService.GetAllContent().Take(30).ToList(); // Limit to 30 contents for performance
 
             Console.WriteLine($"Seeding ratings and viewing history for {users.Count} users and {contents.Count} contents...");
 
@@ -294,7 +282,7 @@ namespace NetWatchApp.Data.SeedData
                         RatingDate = DateTime.Now.AddDays(-_random.Next(1, 180))
                     };
 
-                    _context.Ratings.Add(rating);
+                    _jsonDataService.AddRating(rating);
                 }
 
                 // Watch 1-8 random content items
@@ -328,11 +316,9 @@ namespace NetWatchApp.Data.SeedData
                         WatchedEpisodes = watchedEpisodes
                     };
 
-                    _context.ViewingHistories.Add(viewingHistory);
+                    _jsonDataService.AddViewingHistory(viewingHistory);
                 }
 
-                // Save changes for each user to avoid large transactions
-                _context.SaveChanges();
                 Console.WriteLine($"Added ratings and viewing history for user {user.Id}");
             }
         }
