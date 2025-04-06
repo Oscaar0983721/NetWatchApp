@@ -1,12 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NetWatchApp.Classes.Models;
+using NetWatchApp.Classes.Repositories;
 using NetWatchApp.Data.EntityFramework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NetWatchApp.Classes.Repositories
+namespace NetWatchApp.Tests
 {
     [TestClass]
     public class ContentRepositoryTests
