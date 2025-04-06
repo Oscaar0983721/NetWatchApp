@@ -18,6 +18,7 @@ namespace NetWatchApp.Data.SeedData
             _jsonDataService = new JsonDataService();
         }
 
+        // Modificar el método Seed para verificar si ya hay datos
         public void Seed()
         {
             try
@@ -32,18 +33,39 @@ namespace NetWatchApp.Data.SeedData
                     return; // Data already seeded
                 }
 
-                Console.WriteLine("Starting data seeding...");
+                // Si hay usuarios pero no contenido, solo sembrar el contenido
+                if (users.Any() && !contents.Any())
+                {
+                    Console.WriteLine("Users already exist. Seeding only content...");
+
+                    // Seed movies in smaller batches
+                    SeedMovies(20);
+                    Console.WriteLine("Movies seeded successfully.");
+
+                    // Seed series in smaller batches
+                    SeedSeries(20);
+                    Console.WriteLine("Series seeded successfully.");
+
+                    // Seed ratings and viewing history
+                    SeedRatingsAndViewingHistory();
+                    Console.WriteLine("Ratings and viewing history seeded successfully.");
+
+                    Console.WriteLine("Content seeding completed successfully.");
+                    return;
+                }
+
+                Console.WriteLine("Starting full data seeding...");
 
                 // Seed users in smaller batches to avoid timeout
-                SeedUsers(100);
+                SeedUsers(20);
                 Console.WriteLine("Users seeded successfully.");
 
                 // Seed movies in smaller batches
-                SeedMovies(50);
+                SeedMovies(20);
                 Console.WriteLine("Movies seeded successfully.");
 
                 // Seed series in smaller batches
-                SeedSeries(50);
+                SeedSeries(20);
                 Console.WriteLine("Series seeded successfully.");
 
                 // Seed ratings and viewing history
@@ -83,8 +105,12 @@ namespace NetWatchApp.Data.SeedData
                     RegistrationDate = DateTime.Now.AddMonths(-6)
                 };
                 _jsonDataService.AddUser(adminUser);
+                Console.WriteLine("Admin user added.");
             }
-            Console.WriteLine("Admin user added.");
+            else
+            {
+                Console.WriteLine("Admin user already exists.");
+            }
 
             // Add regular users in batches
             var firstNames = new List<string> { "John", "Jane", "Michael", "Emily", "David", "Sarah", "Robert", "Lisa", "Daniel", "Emma",
